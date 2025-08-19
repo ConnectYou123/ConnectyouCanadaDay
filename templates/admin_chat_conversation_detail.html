@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with {{ conversation.user_name }} - Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Bootstrap CSS CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .message-bubble {
+            animation: fadeIn 0.3s ease-in;
+        }
+        .admin-message .message-content {
+            border-radius: 18px 18px 5px 18px;
+        }
+        .user-message .message-content {
+            border-radius: 18px 18px 18px 5px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #messagesContainer {
+            scrollbar-width: thin;
+            scrollbar-color: #6c757d #f8f9fa;
+        }
+        #messagesContainer::-webkit-scrollbar {
+            width: 6px;
+        }
+        #messagesContainer::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+        #messagesContainer::-webkit-scrollbar-thumb {
+            background: #6c757d;
+            border-radius: 3px;
+        }
+        .card {
+            border-radius: 12px;
+        }
+        .card-header {
+            border-radius: 12px 12px 0 0;
+        }
+        .card-footer {
+            border-radius: 0 0 12px 12px;
+        }
+        .btn-primary, .btn-outline-secondary {
+            border-radius: 8px;
+        }
+        .form-control {
+            border-radius: 8px;
+        }
+        .badge {
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3><i class="fas fa-comments text-primary"></i> Chat with {{ conversation.user_name }}</h3>
+                    <small class="text-muted">{{ conversation.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_chat_conversations') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Chats
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <!-- User Info Card -->
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-user-circle fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title mb-1">{{ conversation.user_name }}</h5>
+                            {% if conversation.user_email %}
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-envelope"></i> 
+                                <small>{{ conversation.user_email }}</small>
+                            </p>
+                            {% endif %}
+                            <span class="badge bg-{{ conversation.formatted_status['color'] }}">
+                                {{ conversation.status.title() }}
+                            </span>
+                            {% if conversation.unread_user_messages > 0 %}
+                            <div class="mt-2">
+                                <span class="badge bg-danger">{{ conversation.unread_user_messages }} unread</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Chat Area -->
+                <div class="col-md-9">
+                    <!-- Messages -->
+                    <div class="card border-0 shadow-sm mb-3" style="height: 500px;">
+                        <div class="card-header bg-light border-0">
+                            <h6 class="mb-0"><i class="fas fa-comment-dots"></i> Conversation</h6>
+                        </div>
+                        <div class="card-body p-0" style="overflow-y: auto; height: 100%;" id="messagesContainer">
+                            {% if conversation.messages %}
+                            {% for message in conversation.messages %}
+                            <div class="message-bubble {{ 'admin-message' if message.is_from_admin else 'user-message' }} mb-3"
+                                 data-message-id="{{ message.id }}">
+                                <div class="d-flex {{ 'justify-content-end' if message.is_from_admin else 'justify-content-start' }}">
+                                    <div class="message-content {{ 'bg-primary text-white' if message.is_from_admin else 'bg-light' }}" 
+                                         style="max-width: 70%; padding: 10px 15px; border-radius: 18px;">
+                                        <p class="mb-1">{{ message.message_text }}</p>
+                                        <small class="text-muted {{ 'text-light' if message.is_from_admin else '' }}" style="font-size: 0.75rem;">
+                                            {{ message.formatted_time }}
+                                            {% if message.is_from_admin %}
+                                            | {{ message.admin_user }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-comment fa-3x text-muted"></i>
+                                <h5 class="mt-3 text-muted">No Messages Yet</h5>
+                                <p class="text-muted">This conversation has no messages.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Reply Box -->
+                    {% if conversation.status == 'open' %}
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <form id="replyForm" method="POST" action="{{ url_for('admin_chat_reply', conversation_id=conversation.id) }}">
+                                <div class="row g-2">
+                                    <div class="col-10">
+                                        <textarea class="form-control" name="admin_message" id="replyMessage" rows="2" 
+                                                placeholder="Type your reply here..." required></textarea>
+                                    </div>
+                                    <div class="col-2 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary w-100" id="sendBtn">
+                                            <i class="fas fa-paper-plane"></i> Send
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-sms"></i> Reply will be sent via SMS to the user
+                                    </small>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card-footer bg-light text-center text-muted">
+                        <i class="fas fa-lock"></i>
+                        This conversation is {{ conversation.status }}. Change status to "Open" to reply.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// === Helper to append a message to the chat window ===
+function appendMessage(message) {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('message-bubble', message.is_from_admin ? 'admin-message' : 'user-message', 'mb-3');
+    wrapper.dataset.messageId = message.id;
+
+    const justifyClass = message.is_from_admin ? 'justify-content-end' : 'justify-content-start';
+
+    wrapper.innerHTML = `
+        <div class="d-flex ${justifyClass}">
+            <div class="message-content ${message.is_from_admin ? 'bg-primary text-white' : 'bg-light'}"
+                style="max-width: 70%; padding: 10px 15px; border-radius: 18px;">
+                <p class="mb-1"></p>
+                <small class="text-muted ${message.is_from_admin ? 'text-light' : ''}" style="font-size: 0.75rem;"></small>
+            </div>
+        </div>
+    `;
+
+    wrapper.querySelector('p').textContent = message.message_text;
+    let smallText = message.formatted_time || '';
+    if (message.is_from_admin && message.admin_user) {
+        smallText += ` | ${message.admin_user}`;
+    }
+    wrapper.querySelector('small').textContent = smallText;
+
+    // Append and scroll in next animation frame
+    requestAnimationFrame(() => {
+        messagesContainer.appendChild(wrapper);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    const replyTextarea = document.getElementById('replyMessage');
+    const replyForm = document.getElementById('replyForm');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let lastMessageId = 0;
+
+    // Initialize lastMessageId from last message bubble if any
+    if (messagesContainer) {
+        const messageBubbles = messagesContainer.querySelectorAll('.message-bubble');
+        if (messageBubbles.length > 0) {
+            lastMessageId = parseInt(messageBubbles[messageBubbles.length - 1].dataset.messageId);
+        }
+        // Scroll to bottom on load
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Focus textarea on load
+    if (replyTextarea) {
+        replyTextarea.focus();
+    }
+
+    // Enter key to send, Shift+Enter for new line
+    if (replyTextarea) {
+        replyTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (replyForm) replyForm.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
+            }
+        });
+    }
+
+    // AJAX sending of message, no page reload
+    if (replyForm && replyTextarea && sendBtn) {
+        replyForm.addEventListener('submit', async function(e) {
+            e.preventDefault();  // prevent default POST form reload
+
+            const messageText = replyTextarea.value.trim();
+            if (!messageText) return;  // no empty messages
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const response = await fetch(replyForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ admin_message: messageText })
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const data = await response.json();
+
+                if (data.success && data.message) {
+                    // Append the new message immediately
+                    appendMessage(data.message);
+                    lastMessageId = Math.max(lastMessageId, data.message.id);
+
+                    // Clear and focus textarea
+                    replyTextarea.value = '';
+                    replyTextarea.focus();
+                } else {
+                    alert('Failed to send message.');
+                }
+            } catch (error) {
+                alert('Error sending message: ' + error.message);
+                console.error('Send message error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        });
+    }
+
+    // Polling for new messages every 5 seconds
+    async function fetchNewMessages() {
+        try {
+            const response = await fetch(
+                `{{ url_for('get_messages', conversation_id=conversation.id) }}?last_message_id=${lastMessageId}`, 
+                { headers: { 'Accept': 'application/json' } }
+            );
+            if (!response.ok) throw new Error('Network error while fetching messages');
+
+            const data = await response.json();
+
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(function(msg) {
+                    appendMessage(msg);
+                    lastMessageId = Math.max(lastMessageId, msg.id);
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch new messages:', err);
+        }
+    }
+    setInterval(fetchNewMessages, 5000);
+});
+</script>
+</body>
+</html>

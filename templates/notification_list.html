@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+        .notification-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s ease;
+        }
+        .notification-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .notification-header h5 {
+            margin: 0;
+            color: #0d6efd;
+        }
+        .notification-header small {
+            color: #6c757d;
+        }
+        .delete-btn {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .delete-btn:hover {
+            background: rgba(220, 53, 69, 0.3);
+        }
+        .notification-body p {
+            margin: 5px 0;
+        }
+        .provider-info {
+            background: rgba(13, 110, 253, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .provider-info h6 {
+            color: #0dcaf0;
+            margin-bottom: 5px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .notification-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .accept {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+        }
+        .reject {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+        }
+        .accept:hover {
+            background: #218838;
+        }
+        .reject:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-bell me-2"></i>Notifications Management</h1>
+            <a href="/reports" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="notification-card"
+                    id="notification-{{ notification.id }}"
+                    data-rating-change="{{ notification.rating_change }}"
+                    data-review-change="{{ notification.review_change }}"
+                    {% if notification.id in matched_providers %}
+                        data-provider-name="{{ matched_providers[notification.id].name }}"
+                        data-provider-phone="{{ matched_providers[notification.id].phone }}"
+                        data-provider-service="{{ matched_providers[notification.id].service_category }}"
+                        data-provider-address="{{ matched_providers[notification.id].business_address }}"
+                        data-provider-email="{{ matched_providers[notification.id].email }}"
+                    {% endif %}
+                >
+                    <div class="notification-header">
+                        <h5>
+                            <i class="fas fa-envelope me-1"></i>
+                            {{ notification.user_email }}
+                        </h5>
+                        <div>
+                            <small>
+                                <i class="fas fa-clock me-1"></i>
+                                {{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
+                            <button class="delete-btn ms-3" onclick="deleteNotification({{ notification.id }})">
+                                <i class="fas fa-trash me-1"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="notification-body">
+                        {% if notification.rating_change %}
+                        <p>
+                            <i class="fas fa-star text-warning me-1"></i>
+                            <strong>Rating changed to:</strong> {{ "%.1f"|format(notification.rating_change) }}
+                        </p>
+                        {% endif %}
+
+                        {% if notification.review_change %}
+                        <p>
+                            <i class="fas fa-comment text-info me-1"></i>
+                            <strong>New reviews:</strong> +{{ notification.review_change }}
+                        </p>
+                        {% endif %}
+
+                        {% if notification.id in matched_providers %}
+                        <div class="provider-info">
+                            <h6><i class="fas fa-user-tie me-1"></i> Matched Provider</h6>
+                            <p><strong>Name:</strong> {{ matched_providers[notification.id].name }}</p>
+                            <p><strong>Phone:</strong> {{ matched_providers[notification.id].phone }}</p>
+                            <p><strong>Service:</strong> {{ matched_providers[notification.id].service_category }}</p>
+                            {% if matched_providers[notification.id].business_address %}
+                                <p><strong>Address:</strong> {{ matched_providers[notification.id].business_address }}</p>
+                                <p><strong>Email:</strong> {{ matched_providers[notification.id].email }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="notification-buttons">
+                            <button class="accept">Accept</button>
+                            <button class="reject">Reject</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">No notifications found</h3>
+                <p class="text-muted">There are currently no notifications in the system.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function deleteNotification(id) {
+            if (confirm('Are you sure you want to delete this notification? This action cannot be undone.')) {
+                fetch('/admin/notifications/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const element = document.getElementById('notification-' + id);
+                        if (element) {
+                            element.style.opacity = '0';
+                            setTimeout(() => {
+                                element.remove();
+
+                                // Check remaining notifications after removal
+                                const remaining = document.querySelectorAll('.notification-card');
+                                if (remaining.length === 0) {
+                                    document.querySelector('.container').innerHTML = `
+                                        <div class="page-header">
+                                            <h1><i class="fas fa-bell me-2"></i>Notifications Management</h1>
+                                            <a href="/reports" class="btn btn-outline-secondary">
+                                                <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                                            </a>
+                                        </div>
+                                        <div class="empty-state">
+                                            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                                            <h3 class="text-muted">No notifications found</h3>
+                                            <p class="text-muted">There are currently no notifications in the system.</p>
+                                        </div>
+                                    `;
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to delete notification'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting the notification');
+                });
+            }
+        }
+
+        // Event delegation for accept/reject buttons
+        document.querySelector('.container').addEventListener('click', function(event) {
+            const target = event.target;
+
+            // Accept button clicked
+            if (target.classList.contains('accept') || target.closest('.accept')) {
+                const btn = target.classList.contains('accept') ? target : target.closest('.accept');
+                const card = btn.closest('.notification-card');
+                const id = card.id.replace('notification-', '');
+
+                const payload = {
+                    email: card.getAttribute('data-provider-email'),
+                    name: card.getAttribute('data-provider-name') || 'Unnamed Provider',
+                    service_category: card.getAttribute('data-provider-service'),
+                    new_rating: parseFloat(card.getAttribute('data-rating-change')),
+                    new_review: parseInt(card.getAttribute('data-review-change'))
+                };
+
+                fetch('/api/service_providers/update_rating', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert('✅ Notification accepted and provider updated!');
+                        deleteNotification(id); // delete notification after update
+                    } else {
+                        alert('❌ Failed to update notification');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('❌ Error occurred while sending accept request');
+                });
+            }
+
+            // Reject button clicked
+            else if (target.classList.contains('reject') || target.closest('.reject')) {
+                const btn = target.classList.contains('reject') ? target : target.closest('.reject');
+                const card = btn.closest('.notification-card');
+                const id = card.id.replace('notification-', '');
+                deleteNotification(id);
+            }
+        });
+    </script>
+</body>
+</html>

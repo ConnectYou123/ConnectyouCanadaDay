@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Contact Manager{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+  
+    
+    <!-- Chat Widget CSS -->
+    <link href="{{ url_for('static', filename='css/chat-widget.css') }}" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+    .app-store-button {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .app-store-button:hover {
+        background-color: var(--bs-gray-700) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .app-store-button.disabled {
+        opacity: 0.6;
+    }
+    .app-store-button.disabled:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    </style>
+</head>
+<body>
+
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main content -->
+    <main class="container my-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Contact Manager</h6>
+                    <p class="text-muted mb-0">Business tool for employee onboarding and training</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Role-based access controls enabled
+                    </p>
+                </div>
+            </div>
+            
+            <!-- App Download Section -->
+            <div class="row mt-4 pt-3 border-top border-secondary">
+                <div class="col-12 text-center">
+                    <h6 class="mb-3">Get the App</h6>
+                    <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                        <!-- Apple App Store -->
+                        <a href="https://apps.apple.com/ca/app/connectyou/id6744894130" target="_blank" class="text-decoration-none">
+                            <div class="app-store-button d-flex align-items-center bg-secondary rounded px-3 py-2" style="min-width: 160px;">
+                                <i class="fab fa-apple fs-4 me-2"></i>
+                                <div class="text-start">
+                                    <div class="small text-muted">Download on the</div>
+                                    <div class="fw-semibold">App Store</div>
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <!-- Google Play Store -->
+                        <div class="app-store-button disabled d-flex align-items-center bg-secondary rounded px-3 py-2 text-muted" style="min-width: 160px; cursor: not-allowed;">
+                            <i class="fab fa-google-play fs-4 me-2"></i>
+                            <div class="text-start">
+                                <div class="small">Get it on</div>
+                                <div class="fw-semibold">Google Play</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+     
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <!-- Chat Widget JavaScript -->
+    <script src="{{ url_for('static', filename='js/chat-widget.js') }}"></script>
+    
+    
+    {% block scripts %}{% endblock %}
+
+    <!-- Contact Us Floating Button -->
+    <button id="contactUsFab" type="button" class="rounded-circle shadow-lg" style="position: fixed; top: 24px; right: 24px; z-index: 11000; width: 64px; height: 64px; background-color:#ff4081; color:#fff; border: 3px solid #fff; display:flex; align-items:center; justify-content:center;" data-bs-toggle="modal" data-bs-target="#contactUsModal" aria-label="Contact Us">
+        <i class="fas fa-envelope fs-4"></i>
+    </button>
+
+    <!-- Code of Conduct Floating Button -->
+    <button id="codeConductFab" type="button" class="rounded-circle shadow-lg" style="position: fixed; top: 24px; right: 104px; z-index: 11000; width: 64px; height: 64px; background-color:#17a2b8; color:#fff; border: 3px solid #fff; display:flex; align-items:center; justify-content:center;" data-bs-toggle="modal" data-bs-target="#codeOfConductModal" aria-label="Code of Conduct">
+        <i class="fas fa-handshake fs-4"></i>
+    </button>
+
+    <!-- Contact Us Modal -->
+    <div class="modal fade" id="contactUsModal" tabindex="-1" aria-labelledby="contactUsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="contactUsLabel"><i class="fas fa-envelope-open-text me-2"></i>Contact Us</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>At ConnectYou, we're here to help—every step of the way. Whether you're a homeowner looking for trusted local services or a provider interested in joining our platform, we’re ready to support you.</p>
+                    <hr class="bg-secondary" />
+                    <h6><i class="fas fa-comments me-2"></i>Live Chat Support</h6>
+                    <p>Need assistance right now? Our Live Chat feature is available directly on the site. Simply click the chat icon in the corner of your screen to start a conversation with our support team.</p>
+                    <h6><i class="fas fa-envelope me-2"></i>Email Support</h6>
+                    <p>Prefer email? Reach out anytime at:
+                        <br><a href="mailto:support@connectyou.pro" class="link-info text-decoration-none">support@connectyou.pro</a>
+                        <br>We typically respond within 24–48 business hours.</p>
+                    <h6><i class="fas fa-toolbox me-2"></i>For Service Providers</h6>
+                    <p>Are you a qualified local professional interested in being featured on ConnectYou?
+                        Email us with your business name, services, and coverage area to get started.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code of Conduct Modal -->
+    <div class="modal fade" id="codeOfConductModal" tabindex="-1" aria-labelledby="codeOfConductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="codeOfConductModalLabel"><i class="fas fa-handshake me-2"></i>ConnectYou Code of Conduct</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fw-semibold text-center mb-4">"Be Kind. Be Honest. Do the Right Thing."</p>
+
+                    <h6 class="mt-3">👩‍🔧 For Service Providers</h6>
+                    <ul>
+                        <li><strong>Be on Time</strong> – Show up when you say you will. Let the customer know if you’re running late.</li>
+                        <li><strong>Be Respectful</strong> – Talk nicely. No rude words, no flirting, no making people uncomfortable.</li>
+                        <li><strong>Do Your Best Work</strong> – Fix what needs fixing. Clean up after yourself. Be proud of your work.</li>
+                        <li><strong>Tell the Truth</strong> – Be honest about what you can and can’t do. No sneaky stuff.</li>
+                        <li><strong>Keep It Safe</strong> – Use tools and materials the right way. Don’t take risks that could hurt someone.</li>
+                    </ul>
+
+                    <h6 class="mt-4">🏡 For Customers</h6>
+                    <ul>
+                        <li><strong>Be Kind</strong> – Treat providers like real people — with kindness and respect.</li>
+                        <li><strong>Be Clear</strong> – Explain what you need help with. Be honest about your budget and timeline.</li>
+                        <li><strong>Give Feedback</strong> – Leave a review after the job — it helps others!</li>
+                        <li><strong>Pay Fairly</strong> – Pay what was agreed on. No ghosting, no games.</li>
+                    </ul>
+
+                    <h6 class="mt-4">🚫 What’s Not Okay (For Everyone)</h6>
+                    <ul>
+                        <li>No bullying or shouting</li>
+                        <li>No stealing or breaking things on purpose</li>
+                        <li>No lying or pretending to be someone you’re not</li>
+                        <li>No funny business — we’re a safe place for real help</li>
+                    </ul>
+
+                    <h6 class="mt-4">✅ What Happens If Rules Are Broken?</h6>
+                    <p>We take action if someone breaks the rules. It could mean a warning, a pause on their account, or being removed from ConnectYou. We want everyone to feel safe, respected, and taken care of — every time. It doesn’t matter if you use ConnectYou or anywhere.</p>
+
+                    <hr class="bg-secondary my-4" />
+                    <h5 class="mb-3">Conflict Resolutions</h5>
+                    <p class="mb-4">Accountability is key to building long-term trust on ConnectYou. Here are three best practices we follow if something goes wrong:</p>
+
+                    <h6>✅ 1. Transparent & Fast Issue Resolution System</h6>
+                    <ul>
+                        <li>Offer in-app or email-based support with live chat and a clear escalation path.</li>
+                        <li>Set expectations, e.g., “We’ll respond within 24 hours, and resolve within 3 business days.”</li>
+                        <li>Track all complaints in a ticketing system for auditability and pattern recognition.</li>
+                    </ul>
+
+                    <h6>✅ 2. Fair & Documented Dispute Mediation Policy</h6>
+                    <ul>
+                        <li>Establish a neutral mediation process with documented steps for both parties.</li>
+                        <li>Require evidence (photos, receipts, messages) from both sides before making a decision.</li>
+                        <li>If ConnectYou makes a final call (e.g., issuing a refund, suspending a provider), explain clearly why it was made.</li>
+                    </ul>
+
+                    <h6>✅ 3. Provider Quality & Conduct Standards (with Enforcement)</h6>
+                    <ul>
+                        <li>Create and publicly share this Code of Conduct for providers and users.</li>
+                        <li>Use a rating and review system to detect repeated issues early.</li>
+                        <li>Enforce consequences fairly: warnings → temporary suspension → permanent removal.</li>
+                    </ul>
+
+                    <p class="mt-4">Thank you for helping us keep ConnectYou safe, respectful, and helpful for everyone! 💙</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}Service Provider Directory{% endblock %}
+
+{% block content %}
+<!-- Mobile-first header -->
+<div class="mobile-header text-center mb-4">
+    <div class="header-controls d-flex justify-content-between align-items-center mb-3">
+        <div class="theme-toggle">
+            <button class="btn btn-outline-light btn-sm me-2" id="lightThemeBtn" onclick="setTheme('light')">
+                <i class="fas fa-sun me-1"></i> Light
+            </button>
+            <button class="btn btn-light btn-sm" id="darkThemeBtn" onclick="setTheme('dark')">
+                <i class="fas fa-moon me-1"></i> Dark
+            </button>
+        </div>
+        
+        <div class="provider-login">
+            <button class="btn provider-login-btn btn-sm" onclick="redirectToProviderLogin()">
+                <i class="fas fa-user-tie me-1"></i>
+                Provider Login
+            </button>
+        </div>
+    </div>
+    
+    <div class="city-selector mb-4">
+        <!-- Search for Cities -->
+        <div class="search-container mb-4">
+            <div class="position-relative">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="form-control search-input" placeholder="Search for cities..." id="citySearch" autocomplete="off">
+                <div id="cityDropdown" class="city-dropdown" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Screen with Fireworks -->
+<div id="welcomeScreen" style="display: none;">
+    <canvas id="fireworksCanvas"></canvas>
+    <div class="welcome-content">
+        <h1 class="welcome-title">Welcome</h1>
+        <h2 class="welcome-city" id="welcomeCityName">Toronto</h2>
+    </div>
+</div>
+
+<!-- City List -->
+<div id="cityList">
+    <div class="city-grid">
+        <div class="city-card active" onclick="selectCity('Toronto')">
+            <div class="city-info">
+                <div class="city-name">Toronto</div>
+                <div class="city-country">Canada</div>
+                <div class="city-providers">29 Providers Available</div>
+            </div>
+            <div class="city-status">
+                <i class="fas fa-check-circle text-success"></i>
+                <span>Active</span>
+            </div>
+        </div>
+        
+        <div class="city-card" onclick="showComingSoon('Vancouver')">
+            <div class="city-info">
+                <div class="city-name">Vancouver</div>
+                <div class="city-country">Canada</div>
+                <div class="city-providers">Coming Soon!</div>
+            </div>
+            <div class="city-status">
+                <i class="fas fa-clock text-warning"></i>
+                <span>Coming Soon</span>
+            </div>
+        </div>
+        
+        <div class="city-card" onclick="showComingSoon('Montreal')">
+            <div class="city-info">
+                <div class="city-name">Montreal</div>
+                <div class="city-country">Canada</div>
+                <div class="city-providers">Coming Soon!</div>
+            </div>
+            <div class="city-status">
+                <i class="fas fa-clock text-warning"></i>
+                <span>Coming Soon</span>
+            </div>
+        </div>
+        
+        <div class="city-card" onclick="showComingSoon('Calgary')">
+            <div class="city-info">
+                <div class="city-name">Calgary</div>
+                <div class="city-country">Canada</div>
+                <div class="city-providers">Coming Soon!</div>
+            </div>
+            <div class="city-status">
+                <i class="fas fa-clock text-warning"></i>
+                <span>Coming Soon</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Categories -->
+<div id="serviceCategories" style="display: none;">
+    <div class="services-header d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-link text-light p-0" onclick="goBackToCity()">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </button>
+        <h3 class="services-title mb-0">Service Categories</h3>
+    </div>
+    
+    <div class="service-section mb-4">
+        <h3 class="section-title">Electrical & HVAC</h3>
+        
+        <div class="service-item" onclick="viewProviders('Electrician')">
+            <div class="service-icon">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="service-info">
+                <div class="service-name">Electrician</div>
+                <div class="service-description">Electrical installations, repairs, and maintenance</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </div>
+        
+        <div class="service-item" onclick="viewProviders('HVAC Technician')">
+            <div class="service-icon">
+                <i class="fas fa-temperature-high"></i>
+            </div>
+            <div class="service-info">
+                <div class="service-name">HVAC Technician</div>
+                <div class="service-description">Heating, ventilation, and air conditioning services</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </div>
+    </div>
+    
+    <div class="service-section mb-4">
+        <h3 class="section-title">Plumbing & General</h3>
+        
+        <div class="service-item" onclick="viewProviders('Plumber')">
+            <div class="service-icon">
+                <i class="fas fa-wrench"></i>
+            </div>
+            <div class="service-info">
+                <div class="service-name">Plumber</div>
+                <div class="service-description">Plumbing installations, repairs, and maintenance</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </div>
+        
+        <div class="service-item" onclick="viewProviders('General Handyman')">
+            <div class="service-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="service-info">
+                <div class="service-name">General Handyman</div>
+                <div class="service-description">General maintenance and repair services</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </div>
+    </div>
+    
+    <div class="service-section mb-4">
+        <h3 class="section-title">Roofing & Exterior</h3>
+        
+        <div class="service-item" onclick="viewProviders('Roofing Specialist')">
+            <div class="service-icon">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="service-info">
+                <div class="service-name">Roofing Specialist</div>
+                <div class="service-description">Roofing installation, repair, and maintenance</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Provider List -->
+<div id="providerList" style="display: none;">
+    <div class="provider-header-bar d-flex justify-content-between align-items-center mb-3">
+        <button class="btn btn-link text-light p-0" onclick="goBackToServices()">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </button>
+        <h3 class="provider-page-title mb-0" id="providerTitle">Service Providers</h3>
+    </div>
+    
+    <!-- Search for providers -->
+    <div class="search-container mb-4">
+        <div class="position-relative">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="form-control search-input" placeholder="Search providers..." id="serviceSearch" autocomplete="off">
+        </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="providerLoading" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading providers...</p>
+    </div>
+    
+    <!-- Dynamic Provider Categories Container -->
+    <div id="dynamicProviderContainer"></div>
+    
+    <!-- No providers message -->
+    <div id="noProvidersMessage" class="text-center py-5" style="display: none;">
+        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">No providers found</h4>
+        <p class="text-muted">Try searching for a different service category.</p>
+    </div>
+</div>
+
+<!-- Coming Soon Modal -->
+<div class="modal fade" id="comingSoonModal" tabindex="-1" aria-labelledby="comingSoonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 20px;">
+            <div class="modal-body text-center p-5">
+                <i class="fas fa-rocket fa-3x text-white mb-4"></i>
+                <h1 class="coming-soon-title">Coming Soon!</h1>
+                <p class="coming-soon-description">We're working hard to bring ConnectYou to your city. Stay tuned!</p>
+                <button class="btn btn-outline-light btn-lg mt-3" onclick="joinWaitingList()">
+                    <i class="fas fa-users me-2"></i>
+                    Join Waiting List
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentCity = '';
+    let currentCategory = '';
+    let providersData = {};
+    
+    // Initialize the app
+    showCityList();
+    
+    function selectCity(cityName) {
+        if (cityName === 'Toronto') {
+            currentCity = cityName;
+            showWelcomeScreen(cityName);
+            setTimeout(() => {
+                showServiceCategories();
+            }, 3000);
+        } else {
+            showComingSoon(cityName);
+        }
+    }
+    
+    function showWelcomeScreen(cityName) {
+        document.getElementById('cityList').style.display = 'none';
+        document.getElementById('welcomeScreen').style.display = 'block';
+        document.getElementById('welcomeCityName').textContent = cityName;
+        createFireworks();
+    }
+    
+    function showServiceCategories() {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('serviceCategories').style.display = 'block';
+    }
+    
+    function viewProviders(category) {
+        currentCategory = category;
+        document.getElementById('serviceCategories').style.display = 'none';
+        document.getElementById('providerList').style.display = 'block';
+        document.getElementById('providerTitle').textContent = category + ' Providers';
+        
+        loadProviders(category);
+    }
+    
+    function loadProviders(category) {
+        document.getElementById('providerLoading').style.display = 'block';
+        document.getElementById('dynamicProviderContainer').style.display = 'none';
+        document.getElementById('noProvidersMessage').style.display = 'none';
+        
+        fetch(`/get_approved_providers/${encodeURIComponent(category)}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('providerLoading').style.display = 'none';
+                
+                if (data.success && data.providers && data.providers.length > 0) {
+                    displayProviders(data.providers, category);
+                } else {
+                    document.getElementById('noProvidersMessage').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading providers:', error);
+                document.getElementById('providerLoading').style.display = 'none';
+                document.getElementById('noProvidersMessage').style.display = 'block';
+            });
+    }
+    
+    function displayProviders(providers, category) {
+        const container = document.getElementById('dynamicProviderContainer');
+        container.innerHTML = '';
+        container.style.display = 'block';
+        
+        // Create category section
+        const categorySection = document.createElement('div');
+        categorySection.className = 'category-section mb-5';
+        
+        // Category header
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'category-header mb-4';
+        categoryHeader.style.cssText = `
+            background: linear-gradient(135deg, rgba(0, 123, 255, 0.2), rgba(0, 123, 255, 0.1));
+            border-left: 4px solid #007bff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        `;
+        
+        categoryHeader.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <h4 style="color: #007bff; font-weight: 600; margin: 0;">
+                    <i class="fas fa-tools me-2"></i>${category}
+                </h4>
+                <span class="badge bg-primary">${providers.length} providers</span>
+            </div>
+        `;
+        
+        categorySection.appendChild(categoryHeader);
+        
+        // Provider cards
+        providers.forEach((provider, index) => {
+            const providerCard = createProviderCard(provider, index + 1);
+            categorySection.appendChild(providerCard);
+        });
+        
+        container.appendChild(categorySection);
+    }
+    
+    function createProviderCard(provider, number) {
+        const card = document.createElement('div');
+        card.className = 'provider-card mb-3';
+        card.style.cssText = `
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        `;
+        
+        const rating = parseFloat(provider.rating) || 4.5;
+        const reviewCount = provider.review_count || 100;
+        const stars = generateStars(rating);
+        
+        card.innerHTML = `
+            <div class="provider-header">
+                <div class="provider-number" style="background: linear-gradient(45deg, #007bff, #0056b3); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 1rem;">${number}</div>
+                <div class="provider-info flex-grow-1">
+                    <div class="provider-name" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">${provider.name}</div>
+                    <div class="provider-rating mb-2">
+                        ${stars}
+                        <span class="ms-1">${rating} stars (${reviewCount} reviews)</span>
+                    </div>
+                    <div class="provider-address mb-1" style="color: white;">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        ${provider.business_address || 'Toronto, ON'}
+                    </div>
+                    <div class="provider-phone mb-2" style="color: white;">
+                        <i class="fas fa-phone me-2"></i>
+                        ${formatPhoneNumber(provider.phone)}
+                    </div>
+                    ${provider.years_experience ? `<div class="provider-experience"><i class="fas fa-clock me-2"></i>${provider.years_experience} years experience</div>` : ''}
+                </div>
+            </div>
+            <div class="provider-actions mt-3 d-flex gap-2">
+                <button class="btn btn-primary" onclick="callProvider('${provider.phone}')">
+                    <i class="fas fa-phone me-1"></i> Call Now
+                </button>
+                <button class="btn btn-success" onclick="textProvider('${provider.phone}')">
+                    <i class="fas fa-sms me-1"></i> Text Now
+                </button>
+                <button class="btn btn-danger" onclick="reportProvider('${provider.name}', '${provider.phone}')">
+                    <i class="fas fa-flag me-1"></i> Report
+                </button>
+            </div>
+        `;
+        
+        return card;
+    }
+    
+    function generateStars(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                stars += '<i class="fas fa-star text-warning"></i>';
+            } else {
+                stars += '<i class="far fa-star text-warning"></i>';
+            }
+        }
+        return stars;
+    }
+    
+    function formatPhoneNumber(phone) {
+        if (!phone) return '';
+        const cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 10) {
+            return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+        }
+        return phone;
+    }
+    
+    function goBackToServices() {
+        document.getElementById('providerList').style.display = 'none';
+        document.getElementById('serviceCategories').style.display = 'block';
+    }
+    
+    function goBackToCity() {
+        document.getElementById('serviceCategories').style.display = 'none';
+        document.getElementById('cityList').style.display = 'block';
+    }
+    
+    function showCityList() {
+        document.getElementById('cityList').style.display = 'block';
+        document.getElementById('serviceCategories').style.display = 'none';
+        document.getElementById('providerList').style.display = 'none';
+        document.getElementById('welcomeScreen').style.display = 'none';
+    }
+    
+    function showComingSoon(cityName) {
+        const modal = new bootstrap.Modal(document.getElementById('comingSoonModal'));
+        modal.show();
+    }
+    
+    // Global functions for buttons
+    window.selectCity = selectCity;
+    window.viewProviders = viewProviders;
+    window.goBackToServices = goBackToServices;
+    window.goBackToCity = goBackToCity;
+    window.showComingSoon = showComingSoon;
+    
+    // Provider action functions
+    window.callProvider = function(phone) {
+        window.location.href = `/call_provider?phone=${encodeURIComponent(phone)}`;
+    };
+    
+    window.textProvider = function(phone) {
+        window.location.href = `/text_provider?phone=${encodeURIComponent(phone)}`;
+    };
+    
+    window.reportProvider = function(name, phone) {
+        window.location.href = `/submit_report?provider_name=${encodeURIComponent(name)}&provider_phone=${encodeURIComponent(phone)}`;
+    };
+    
+    window.redirectToProviderLogin = function() {
+        window.open('https://connectyou.pro/login', '_blank');
+    };
+    
+    window.joinWaitingList = function() {
+        window.location.href = '/submit_waiting_list';
+    };
+    
+    // Fireworks animation (simplified)
+    function createFireworks() {
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Simple fireworks animation
+        let particles = [];
+        
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 1,
+                decay: Math.random() * 0.02 + 0.005,
+                color: `hsl(${Math.random() * 360}, 100%, 70%)`
+            };
+        }
+        
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add new particles
+            if (Math.random() < 0.1) {
+                for (let i = 0; i < 10; i++) {
+                    particles.push(createParticle());
+                }
+            }
+            
+            // Update and draw particles
+            particles = particles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life -= particle.decay;
+                
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                return particle.life > 0;
+            });
+            
+            ctx.globalAlpha = 1;
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    }
+});
+</script>
+{% endblock %}

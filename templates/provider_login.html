@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Provider Login - Service Directory{% endblock %}
+
+{% block content %}
+<div class="provider-login-container">
+    <!-- Header with back button -->
+    <div class="provider-header d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-outline-light btn-sm" onclick="goBackToHome()">
+            <i class="fas fa-arrow-left me-2"></i>
+            Back to Home
+        </button>
+        
+        <h1 class="provider-title text-white mb-0">Provider Login</h1>
+        
+        <div style="width: 100px;"></div> <!-- Spacer for center alignment -->
+    </div>
+    
+    <!-- Login Form -->
+    <div class="login-form-container">
+        <div class="login-card">
+            <div class="card-header text-center mb-4">
+                <div class="provider-icon mb-3">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h3 class="text-white mb-2">Welcome Back</h3>
+                <p class="text-light opacity-75">Sign in to manage your business profile</p>
+            </div>
+            
+            <form method="POST" class="login-form">
+                <div class="mb-4">
+                    <label for="email" class="form-label text-light">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               placeholder="Enter your email" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label text-light">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Enter your password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                        <label class="form-check-label text-light" for="remember">
+                            Remember me
+                        </label>
+                    </div>
+                    <a href="#" class="text-light opacity-75 text-decoration-none">Forgot password?</a>
+                </div>
+                
+                <button type="submit" class="btn provider-login-submit w-100 mb-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Sign In
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-light opacity-75 mb-2">Don't have an account?</p>
+                    <a href="/provider/register" class="btn btn-outline-light">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Register as Provider
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Benefits Section -->
+        <div class="benefits-section mt-5">
+            <h4 class="text-white text-center mb-4">Why Join Our Network?</h4>
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="benefit-item">
+                        <i class="fas fa-users text-primary me-3"></i>
+                        <div>
+                            <h6 class="text-white mb-1">Connect with Local Customers</h6>
+                            <p class="text-light opacity-75 mb-0">Reach customers in your area looking for your services</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="benefit-item">
+                        <i class="fas fa-chart-line text-success me-3"></i>
+                        <div>
+                            <h6 class="text-white mb-1">Grow Your Business</h6>
+                            <p class="text-light opacity-75 mb-0">Track calls, messages, and customer interactions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="benefit-item">
+                        <i class="fas fa-mobile-alt text-info me-3"></i>
+                        <div>
+                            <h6 class="text-white mb-1">Mobile-First Platform</h6>
+                            <p class="text-light opacity-75 mb-0">Manage your profile on any device, anywhere</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function goBackToHome() {
+        window.location.href = '/';
+    }
+    
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('passwordToggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+</script>
+{% endblock %}

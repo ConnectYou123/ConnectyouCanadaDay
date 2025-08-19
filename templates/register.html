@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Contact Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Register
+                </h4>
+                <p class="text-muted mb-0 mt-1">Create your account</p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i>
+                            Username <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required 
+                               placeholder="Choose a username" autofocus>
+                        <div class="form-text">Username must be unique and at least 3 characters long</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope me-1"></i>
+                            Email Address <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               placeholder="your.email@company.com">
+                        <div class="form-text">Use your business email address</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-1"></i>
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required 
+                               placeholder="Create a strong password" minlength="6">
+                        <div class="form-text">Password must be at least 6 characters long</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="role" class="form-label">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Role
+                        </label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="employee" selected>Employee</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                        <div class="form-text">
+                            <small>
+                                <strong>Employee:</strong> View assigned lists | 
+                                <strong>Manager:</strong> Create/manage lists | 
+                                <strong>Admin:</strong> Full access
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">
+                    Already have an account? 
+                    <a href="{{ url_for('login') }}" class="text-decoration-none">Sign in here</a>
+                </small>
+            </div>
+        </div>
+        
+        <!-- Role Information -->
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-users me-2"></i>
+                    Role-Based Access Control
+                </h6>
+                <div class="row text-muted small">
+                    <div class="col-12 mb-2">
+                        <div class="border-start-primary ps-3">
+                            <strong>Administrator</strong><br>
+                            Complete system access, can view and manage all contact lists, user management
+                        </div>
+                    </div>
+                    <div class="col-12 mb-2">
+                        <div class="border-start-warning ps-3">
+                            <strong>Manager</strong><br>
+                            Can create and manage contact lists, add contacts, send messages to teams
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="border-start-success ps-3">
+                            <strong>Employee</strong><br>
+                            Can view assigned contact lists and interact with contacts in those lists
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    const usernameField = document.getElementById('username');
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    
+    form.addEventListener('submit', function(e) {
+        const username = usernameField.value.trim();
+        const email = emailField.value.trim();
+        const password = passwordField.value.trim();
+        
+        if (username.length < 3) {
+            e.preventDefault();
+            alert('Username must be at least 3 characters long.');
+            usernameField.focus();
+            return;
+        }
+        
+        if (!email || !email.includes('@')) {
+            e.preventDefault();
+            alert('Please enter a valid email address.');
+            emailField.focus();
+            return;
+        }
+        
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Password must be at least 6 characters long.');
+            passwordField.focus();
+            return;
+        }
+    });
+    
+    // Real-time validation feedback
+    usernameField.addEventListener('blur', function() {
+        if (this.value.trim().length < 3 && this.value.trim().length > 0) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+    
+    passwordField.addEventListener('input', function() {
+        if (this.value.length < 6 && this.value.length > 0) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+});
+</script>
+{% endblock %}

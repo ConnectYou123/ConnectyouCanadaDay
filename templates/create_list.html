@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Create Contact List - Contact Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-xl-6 mx-auto">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Create Contact List</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus me-2"></i>
+                    Create New Contact List
+                </h4>
+                <p class="text-muted mb-0 mt-1">
+                    Create a contact list for your team or department (max 6 contacts per list)
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-list me-1"></i>
+                            List Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="e.g., Engineering Team, Sales Department" maxlength="100">
+                        <div class="form-text">Choose a descriptive name for easy identification</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Description
+                        </label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Brief description of this contact list's purpose..." maxlength="500"></textarea>
+                        <div class="form-text">Optional description to help others understand the list's purpose</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Create List
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Guidelines Card -->
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Best Practices for Contact Lists
+                </h6>
+                <ul class="mb-0 small text-muted">
+                    <li><strong>Keep lists focused:</strong> Each list is limited to 6 contacts for optimal management</li>
+                    <li><strong>Use descriptive names:</strong> Make it easy to identify the purpose of each list</li>
+                    <li><strong>Organize by department:</strong> Group contacts by team, project, or function</li>
+                    <li><strong>Regular updates:</strong> Keep contact information current and relevant</li>
+                    <li><strong>Role-based access:</strong> Consider who needs access to which contact lists</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Examples Card -->
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-examples me-2"></i>
+                    Example Use Cases
+                </h6>
+                <div class="row text-muted small">
+                    <div class="col-md-6">
+                        <div class="border-start-primary ps-3 mb-3">
+                            <strong>New Employee Onboarding</strong><br>
+                            Key contacts for new hire orientation and training
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border-start-success ps-3 mb-3">
+                            <strong>Emergency Contacts</strong><br>
+                            Critical personnel for urgent situations
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border-start-warning ps-3 mb-3">
+                            <strong>Department Leads</strong><br>
+                            Team leaders and department managers
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border-start-danger ps-3">
+                            <strong>Training Coordinators</strong><br>
+                            Staff responsible for employee development
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameField = document.getElementById('name');
+    const descriptionField = document.getElementById('description');
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = nameField.value.trim();
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a name for the contact list.');
+            nameField.focus();
+            return;
+        }
+        
+        if (name.length < 3) {
+            e.preventDefault();
+            alert('List name must be at least 3 characters long.');
+            nameField.focus();
+            return;
+        }
+    });
+    
+    // Auto-capitalize first letter of name
+    nameField.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+        }
+    });
+    
+    // Character counters
+    function addCharacterCounter(element, maxLength) {
+        const counter = document.createElement('div');
+        counter.className = 'text-muted small text-end mt-1';
+        counter.innerHTML = `<span class="char-count">0</span>/${maxLength} characters`;
+        
+        element.parentNode.appendChild(counter);
+        
+        const charCountSpan = counter.querySelector('.char-count');
+        
+        element.addEventListener('input', function() {
+            const count = this.value.length;
+            charCountSpan.textContent = count;
+            
+            if (count > maxLength * 0.9) {
+                counter.classList.add('text-warning');
+            } else {
+                counter.classList.remove('text-warning');
+            }
+            
+            if (count >= maxLength) {
+                counter.classList.add('text-danger');
+                counter.classList.remove('text-warning');
+            } else {
+                counter.classList.remove('text-danger');
+            }
+        });
+    }
+    
+    // Add character counters
+    addCharacterCounter(nameField, 100);
+    addCharacterCounter(descriptionField, 500);
+});
+</script>
+{% endblock %}

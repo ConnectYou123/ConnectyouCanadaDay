@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Contact Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Login
+                </h4>
+                <p class="text-muted mb-0 mt-1">Sign in to your account</p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i>
+                            Username
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required 
+                               placeholder="Enter your username" autofocus>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-1"></i>
+                            Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required 
+                               placeholder="Enter your password">
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">
+                    Don't have an account? 
+                    <a href="{{ url_for('register') }}" class="text-decoration-none">Register here</a>
+                </small>
+            </div>
+        </div>
+        
+        <!-- Demo Account Information -->
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Getting Started
+                </h6>
+                <p class="card-text small text-muted mb-2">
+                    This is a business tool for employee onboarding and training with role-based access controls.
+                </p>
+                <ul class="small text-muted mb-0">
+                    <li><strong>Admin:</strong> Full system access, can view all lists</li>
+                    <li><strong>Manager:</strong> Can create and manage contact lists</li>
+                    <li><strong>Employee:</strong> Can view assigned contact lists</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus username field
+    const usernameField = document.getElementById('username');
+    if (usernameField) {
+        usernameField.focus();
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        if (!username) {
+            e.preventDefault();
+            alert('Please enter your username.');
+            document.getElementById('username').focus();
+            return;
+        }
+        
+        if (!password) {
+            e.preventDefault();
+            alert('Please enter your password.');
+            document.getElementById('password').focus();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Service Provider Directory</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+        }
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+        }
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Admin Header -->
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-chart-bar me-3"></i>Analytics Dashboard</h1>
+                    <p class="lead mb-0">Platform usage and submission statistics</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary me-3">
+                        <i class="fas fa-user-shield me-1"></i>Admin Access
+                    </span>
+                    <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-warning me-2">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </a>
+                    <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+    <div class="mb-4">
+    <a href="/" class="btn-back me-3">
+        <i class="fas fa-home me-2"></i>Home
+    </a>
+    <a href="/reports" class="btn-back me-3">
+        <i class="fas fa-flag me-2"></i>Reports
+    </a>
+    <a href="/admin/download_analytics" class="btn-back me-3">
+        <i class="fas fa-download me-2"></i>Download Analytics
+    </a>
+    <a href="/admin/providers" class="btn-back me-3">
+        <i class="fas fa-users-cog me-2"></i>Providers
+    </a>
+    <a href="/admin/cities" class="btn-back me-3">
+        <i class="fas fa-map-marker-alt me-2"></i>Cities
+    </a>
+    <a href="/admin/waiting_list" class="btn-back me-3">
+        <i class="fas fa-clock me-2"></i>Waiting List
+    </a>
+    <a href="/admin/notifications" class="btn-back">
+        <i class="fas fa-clock me-2"></i>Notification List
+    </a>
+</div>
+
+        <!-- Summary Statistics -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-list fs-1 text-info mb-2"></i>
+                    <h3>{{ total_submissions }}</h3>
+                    <p class="mb-0">Total Submissions</p>
+                    <small class="text-muted">All platform activity</small>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-flag fs-1 text-danger mb-2"></i>
+                    <h3>{{ total_provider_reports }}</h3>
+                    <p class="mb-0">Provider Reports</p>
+                    <small class="text-muted">Issues reported</small>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-comment-dots fs-1 text-success mb-2"></i>
+                    <h3>{{ total_feedback }}</h3>
+                    <p class="mb-0">App Feedback</p>
+                    <small class="text-muted">User suggestions</small>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-users fs-1 text-primary mb-2"></i>
+                    <h3>{{ total_waiting_list }}</h3>
+                    <p class="mb-0">Waiting List</p>
+                    <small class="text-muted">Join requests</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submission Breakdown Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h4 class="mb-3"><i class="fas fa-chart-bar me-2"></i>Submission Breakdown</h4>
+                    <canvas id="submissionChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Statistics -->
+        {% if total_calls > 0 or total_texts > 0 %}
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-phone fs-1 text-info mb-2"></i>
+                    <h3>{{ total_calls }}</h3>
+                    <p class="mb-0">Total Calls</p>
+                    <small class="text-muted">{{ call_success_rate }}% success rate</small>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-sms fs-1 text-warning mb-2"></i>
+                    <h3>{{ total_texts }}</h3>
+                    <p class="mb-0">Total Texts</p>
+                    <small class="text-muted">{{ text_success_rate }}% success rate</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Daily Activity Chart -->
+        {% if daily_stats %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h4 class="mb-3"><i class="fas fa-calendar-week me-2"></i>Daily Activity (Last 7 Days)</h4>
+                    <canvas id="dailyChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Top Providers -->
+        {% if top_providers %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="stats-card">
+                    <h4 class="mb-3"><i class="fas fa-star me-2"></i>Most Contacted Providers</h4>
+                    <div class="row">
+                        {% for provider in top_providers %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center p-2 bg-dark rounded">
+                                <div>
+                                    <strong>{{ provider.provider_name }}</strong>
+                                    <small class="text-muted d-block">{{ provider.service_category }}</small>
+                                </div>
+                                <span class="badge bg-primary">{{ provider.contact_count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Submission Breakdown Chart
+        const submissionCtx = document.getElementById('submissionChart').getContext('2d');
+        const submissionChart = new Chart(submissionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Provider Reports', 'App Feedback', 'Waiting List'],
+                datasets: [{
+                    label: 'Number of Submissions',
+                    data: [
+                        {{ total_provider_reports }},
+                        {{ total_feedback }},
+                        {{ total_waiting_list }}
+                    ],
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.8)',   // Red for reports
+                        'rgba(25, 135, 84, 0.8)',   // Green for feedback
+                        'rgba(13, 110, 253, 0.8)'   // Blue for waiting list
+                    ],
+                    borderColor: [
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(25, 135, 84, 1)',
+                        'rgba(13, 110, 253, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    }
+                }
+            }
+        });
+
+        {% if daily_stats %}
+        // Daily Activity Chart
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        const dailyChart = new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: [{% for day in daily_stats %}'{{ day.date }}'{% if not loop.last %},{% endif %}{% endfor %}],
+                datasets: [
+                    {
+                        label: 'Provider Reports',
+                        data: [{% for day in daily_stats %}{{ day.provider_reports }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'App Feedback',
+                        data: [{% for day in daily_stats %}{{ day.feedback }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Waiting List',
+                        data: [{% for day in daily_stats %}{{ day.waiting_list }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

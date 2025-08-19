@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Provider - ConnectYou Admin</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+        }
+        .form-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            color: white;
+        }
+        .btn-save {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
+        }
+        .section-header {
+            background: rgba(23, 162, 184, 0.1);
+            border-left: 4px solid #17a2b8;
+            padding: 1rem;
+            margin: 2rem 0 1rem 0;
+            border-radius: 8px;
+        }
+        .provider-info-badge {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="form-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-edit me-3"></i>Edit Provider</h2>
+                        <a href="{{ url_for('admin_providers', city=provider.city) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Providers
+                        </a>
+                    </div>
+
+                    <div class="provider-info-badge">
+                        <strong>Provider ID:</strong> {{ provider.id }} | 
+                        <strong>Created:</strong> {{ provider.created_at.strftime('%B %d, %Y') }} |
+                        <strong>Last Updated:</strong> {{ provider.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'danger' else 'check-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST">
+                        <!-- Basic Information -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Business Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ provider.name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="service_category" class="form-label">Service Category *</label>
+                               
+                            <select name="service_category" class="form-select" required>
+                            {% for category in service_categories %}
+                                <option value="{{ category }}" {% if provider.service_category == category %}selected{% endif %}>
+                                    {{ category }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-phone me-2"></i>Contact Information</h5>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ provider.phone }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ provider.email or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="website" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="website" name="website" value="{{ provider.website or '' }}">
+                        </div>
+
+                        <!-- Location Information -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Location Information</h5>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="business_address" class="form-label">Business Address *</label>
+                            <input type="text" class="form-control" id="business_address" name="business_address" value="{{ provider.business_address }}" required>
+                        </div>
+
+                        <div class="row">
+                         <div class="col-md-4 mb-3">
+                            <label for="city" class="form-label">City *</label>
+                            <select class="form-select" id="city" name="city" required>
+                            <option value="" disabled>Select a city</option>
+                            {% for city in cities %}
+                                <option value="{{ city.name }}" {% if city.name == provider.city %}selected{% endif %}>
+                                    {{ city.flag_emoji }} {{ city.name }}, {{ city.country }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        </div>
+                           <div class="col-md-4 mb-3">
+                            <label for="sub-city" class="form-label">Sub-city </label>
+                            <input type="text" class="form-control" id="sub-city" name="sub-city" value="{{provider.sub_city}}" >
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="province" class="form-label">Province/State *</label>
+                            <input type="text" class="form-control" id="province" name="province" value="{{provider.province}}">
+                        </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="postal_code" class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ provider.postal_code or '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Rating & Reviews -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-star me-2"></i>Rating & Reviews</h5>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="star_rating" class="form-label">Star Rating (out of 5)</label>
+                                <input type="number" class="form-control" id="star_rating" name="star_rating" min="1" max="5" step="0.1" value="{{ provider.star_rating }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="review_count" class="form-label">Number of Reviews</label>
+                                <input type="number" class="form-control" id="review_count" name="review_count" min="0" value="{{ provider.review_count }}">
+                            </div>
+                        </div>
+
+                        <!-- Business Details -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-briefcase me-2"></i>Business Details</h5>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ provider.description or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="specialties" class="form-label">Specialties</label>
+                            <textarea class="form-control" id="specialties" name="specialties" rows="2">{{ provider.specialties or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="years_experience" class="form-label">Years of Experience</label>
+                                <input type="number" class="form-control" id="years_experience" name="years_experience" min="0" max="50" value="{{ provider.years_experience or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="license_number" class="form-label">License Number</label>
+                                <input type="text" class="form-control" id="license_number" name="license_number" value="{{ provider.license_number or '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Verification Status -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-shield-check me-2"></i>Verification Status</h5>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="insurance_verified" name="insurance_verified" {{ 'checked' if provider.insurance_verified }}>
+                                    <label class="form-check-label" for="insurance_verified">
+                                        Insurance Verified
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="background_checked" name="background_checked" {{ 'checked' if provider.background_checked }}>
+                                    <label class="form-check-label" for="background_checked">
+                                        Background Checked
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {{ 'selected' if provider.status == 'active' }}>Active</option>
+                                    <option value="inactive" {{ 'selected' if provider.status == 'inactive' }}>Inactive</option>
+                                    <option value="suspended" {{ 'selected' if provider.status == 'suspended' }}>Suspended</option>
+                                </select>
+                            </div>
+                          
+                             
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-4">
+                            <a href="{{ url_for('admin_providers', city=provider.city) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-info btn-save" id="updateBtn">
+                                <i class="fas fa-save me-2" id="updateIcon"></i><span id="updateText">Update Provider</span>
+                            </button>
+                        </div>
+                    </form>
+                      <div class="section-header">
+                                    <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Dashboard Account</h5>
+                     </div>
+
+                       <div class="mb-5 p-3" style="background: rgba(0, 123, 255, 0.1); border-radius: 10px;">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="create_account" name="create_account" {{ 'checked' if provider.has_account }}>
+                                        <label class="form-check-label" for="create_account">
+                                            <strong>Create/Enable Dashboard Account</strong>
+                                        </label>
+                                    </div>
+                                    <form id="registerForm">
+                                    <div id="accountFields" style="{{ 'display: block;' if provider.has_account else 'display: none;' }}">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="username" class="form-label">Username *</label>
+                                                <input type="text" autocomplete="off" class="form-control" id="username" name="username" 
+                                                    {% if provider.username %} value="{{ provider.username }}" {% endif %}  value="">
+                                                
+                                                
+                                            </div>
+                                             <div class="col-md-6 mb-3">
+                                                <label for="email" class="form-label">Email</label>
+                                                <input type="text" class="form-control" id="email1" name="email1" autocomplete="off"
+                                                {% if provider.email1 %} value="{{ provider.email1 }}" {% endif %}>
+
+                                              
+                                                
+                                            </div>
+                                         
+                                            <div class="col-md-6 mb-3">
+                                                <label for="status" class="form-label">Account Status *</label>
+                                                <select class="form-select" id="account_status" name="account_status">
+                                                    <option value="active" {{ 'selected' if provider.account_status == 'active' }}>Active</option>
+                                                    <option value="inactive" {{ 'selected' if provider.account_status == 'inactive' }}>Inactive</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="password" class="form-label">Password</label>
+                                            <div class="input-group">
+                                                <input type="password" autocomplete="new-password" class="form-control" id="password" name="password"
+                                                    placeholder="Leave blank to keep current"
+                                                    {% if provider.password %} value="{{ provider.password }}" {% endif %}>
+
+                                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                                    <i class="fas fa-eye" id="togglePasswordIcon1"></i>
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Set a new password for the provider</small>
+                                        </div>
+                                        <input type="hidden" id="provider_id" value="{{ provider.id }}">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="confirm_password" autocomplete="new-password" name="confirm_password"  {% if provider.password %} value="{{ provider.password }}" {% endif %}>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
+                                                    <i class="fas fa-eye" id="togglePasswordIcon2"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                         <div class="d-flex justify-content-end gap-3 mt-4">
+                                          
+                                        <button type="submit" class="btn btn-success btn-save" id="createBtn">
+                                            <i class="fas fa-plus me-2" id="createIcon"></i><span id="createText">Create</span>
+                                        </button>
+                                        </form>
+                                        <!-- Update Button -->
+                                        <button type="button" class="btn btn-info btn-save" id="updateBtn1" onclick="updateProviderCredentials()">
+                                            <i class="fas fa-save me-2" id="updateIcon"></i><span id="updateText">Update</span>
+                                        </button>
+
+                                        <!-- Delete Button -->
+
+                                        <button type="button" class="btn btn-danger" id="deleteBtn" onclick="confirmDelete()">
+                                            <i class="fas fa-trash-alt me-2" id="deleteIcon"></i><span id="deleteText">Delete</span>
+                                        </button>
+                                     </div>
+                                        <div>
+                                            
+                                    
+                                     <!-- Update Button -->
+                                       
+                                    </div>
+                                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-success" id="successModalLabel">
+                        <i class="fas fa-check-circle me-2"></i>Update Successful
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="success-checkmark mb-3">
+                        <div class="check-icon">
+                            <span class="icon-line line-tip"></span>
+                            <span class="icon-line line-long"></span>
+                            <div class="icon-circle"></div>
+                            <div class="icon-fix"></div>
+                        </div>
+                    </div>
+                    <h4 class="text-success mb-2">Provider Updated Successfully!</h4>
+                    <p class="text-light mb-0">The provider information has been saved and is now live on the platform.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                        <i class="fas fa-thumbs-up me-2"></i>Great!
+                    </button>
+                    <a href="{{ url_for('admin_providers', city=provider.city) }}" class="btn btn-outline-light">
+                        <i class="fas fa-list me-2"></i>Back to Providers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .success-checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 2;
+            stroke: #4CAF50;
+            stroke-miterlimit: 10;
+            margin: 10% auto;
+            box-shadow: inset 0px 0px 0px #4CAF50;
+            animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+            position: relative;
+        }
+
+        .success-checkmark .check-icon {
+            width: 56px;
+            height: 56px;
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .check-icon::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #4CAF50;
+            transform: translate(-50%, -50%);
+        }
+
+        .success-checkmark .check-icon .icon-line {
+            height: 3px;
+            background-color: #fff;
+            display: block;
+            border-radius: 2px;
+            position: absolute;
+            z-index: 10;
+        }
+
+        .success-checkmark .check-icon .icon-line.line-tip {
+            top: 46%;
+            left: 14px;
+            width: 25px;
+            transform: rotate(45deg);
+            animation: icon-line-tip .75s;
+        }
+
+        .success-checkmark .check-icon .icon-line.line-long {
+            top: 38%;
+            right: 8px;
+            width: 47px;
+            transform: rotate(-45deg);
+            animation: icon-line-long .75s;
+        }
+
+        @keyframes icon-line-tip {
+            0% {
+                width: 0;
+                left: 1px;
+                top: 19px;
+            }
+            54% {
+                width: 0;
+                left: 1px;
+                top: 19px;
+            }
+            70% {
+                width: 50px;
+                left: -8px;
+                top: 37px;
+            }
+            84% {
+                width: 17px;
+                left: 21px;
+                top: 48px;
+            }
+            100% {
+                width: 25px;
+                left: 14px;
+                top: 45px;
+            }
+        }
+
+        @keyframes icon-line-long {
+            0% {
+                width: 0;
+                right: 46px;
+                top: 54px;
+            }
+            65% {
+                width: 0;
+                right: 46px;
+                top: 54px;
+            }
+            84% {
+                width: 55px;
+                right: 0px;
+                top: 35px;
+            }
+            100% {
+                width: 47px;
+                right: 8px;
+                top: 38px;
+            }
+        }
+
+        @keyframes fill {
+            100% {
+                box-shadow: inset 0px 0px 0px 30px #4CAF50;
+            }
+        }
+
+        @keyframes scale {
+            0%, 100% {
+                transform: none;
+            }
+            50% {
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Debug: Log all flash messages
+        console.log('Flash messages check:', {{ get_flashed_messages(with_categories=true)|tojson|safe }});
+        
+        // Check if there's a success message and show modal
+        {% if get_flashed_messages(category_filter=['success']) %}
+        console.log('Success message detected, showing modal...');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing modal...');
+            const modalElement = document.getElementById('successModal');
+            console.log('Modal element:', modalElement);
+            
+            if (modalElement) {
+                var successModal = new bootstrap.Modal(modalElement);
+                successModal.show();
+                console.log('Modal should be showing now');
+                
+                // Notify main app to refresh provider data
+                notifyProviderUpdate();
+            } else {
+                console.error('Modal element not found!');
+            }
+        });
+        {% else %}
+        console.log('No success messages found');
+        {% endif %}
+        
+        // Handle form submission with visual feedback
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const updateBtn = document.getElementById('updateBtn');
+            const updateIcon = document.getElementById('updateIcon');
+            const updateText = document.getElementById('updateText');
+            
+            form.addEventListener('submit', function(e) {
+                // Show loading state
+                updateBtn.disabled = true;
+                updateIcon.className = 'fas fa-spinner fa-spin me-2';
+                updateText.textContent = 'Updating...';
+                updateBtn.classList.add('btn-warning');
+                updateBtn.classList.remove('btn-info');
+            });
+        });
+        
+        // Function to notify main app about provider updates
+        function notifyProviderUpdate() {
+            console.log('Notifying frontend of provider update...');
+            
+            // Use localStorage to communicate with other tabs/windows
+            const updateData = {
+                timestamp: Date.now(),
+                providerId: {{ provider.id }},
+                category: '{{ provider.service_category }}',
+                action: 'provider_updated'
+            };
+            
+            localStorage.setItem('providerUpdated', JSON.stringify(updateData));
+            console.log('Provider update notification sent:', updateData);
+            
+            // Trigger storage event manually for same window
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'providerUpdated',
+                newValue: JSON.stringify(updateData),
+                oldValue: null
+            }));
+            
+            // Remove the flag after minimal delay for instant updates
+            setTimeout(() => {
+                localStorage.removeItem('providerUpdated');
+            }, 100);
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+        const accountToggle = document.getElementById('create_account');
+        const accountFields = document.getElementById('accountFields');
+        
+        accountToggle.addEventListener('change', function() {
+            accountFields.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Initialize password validation
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        
+        function validatePassword() {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("Passwords don't match");
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        }
+        
+        password.onchange = validatePassword;
+        confirmPassword.onkeyup = validatePassword;
+    });
+  document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const username = document.getElementById('username').value;
+  const email    = document.getElementById('email1').value;
+  const password = document.getElementById('password').value;
+  const password2 = document.getElementById('confirm_password').value;
+  const id = "{{provider.id}}";
+  if(!username){
+        alert("no user name provided");
+        return;
+  }
+  
+ 
+  const data = {
+    username,
+    email,
+    password,
+    password2,
+    id
+  };
+
+  try {
+    const response = await fetch('/create-user-provider', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      Swal.fire("User registered successfully!");
+      // Optionally redirect:
+      // window.location.href = '/login/';
+    } else {
+      const firstKey = Object.keys(result)[0] || "Error";
+      let message = "";
+
+      if (Array.isArray(result[firstKey])) {
+        message = result[firstKey][0];
+      } else if (typeof result[firstKey] === "string") {
+        message = result[firstKey];
+      } else if (typeof result[firstKey] === "object") {
+        message = JSON.stringify(result[firstKey]);
+      } else {
+        message = "An unknown error occurred.";
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Error',
+        text: message,
+      });
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Network Error',
+      text: 'Could not connect to server. Please try again later.'
+    });
+  }
+});
+
+document.getElementById('city').addEventListener('blur', function () {
+    const city = this.value.trim();
+    if (!city) return;
+
+    fetch(`https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&format=json&addressdetails=1`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.length === 0) {
+                alert('City not found. Please enter a valid city.');
+                return;
+            }
+
+            // Extract state or province
+            const address = data[0].address;
+            const province = address.state || address.region || address.county || '';
+            document.getElementById('province').value = province;
+        })
+        .catch(err => {
+            console.error('Error fetching location data:', err);
+            alert('Failed to retrieve location info.');
+        });
+});
+function togglePassword(fieldId) {
+    const input = document.getElementById(fieldId);
+    const icon = fieldId === 'password' ? document.getElementById('togglePasswordIcon1') : document.getElementById('togglePasswordIcon2');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+function confirmDelete() {
+    const providerId = document.getElementById('provider_id').value;
+    const username=document.getElementById('username').value;
+    if(!username){
+        alert("nothing to delete.");
+        return;
+    }
+    if (!providerId) {
+        alert("Provider ID not found.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete this user's credentials?")) {
+        return;
+    }
+
+    fetch(`/service-provider/${providerId}/clear_credentials`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+            // Add auth headers if needed
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || "Operation completed.");
+         location.reload();
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("An error occurred while deleting credentials.");
+    });
+}
+function updateProviderCredentials() {
+    // Get input values
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email1').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    console.log(email)
+    // Basic validation
+    if (!username) {
+        alert("Username is required.");
+        return;
+    }
+
+    if (password && password !== confirmPassword) {
+        alert("Passwords do not match.");
+        return;
+    }
+
+    // Build payload
+    const payload = {
+        username: username,
+        email: email
+    };
+
+    if (password) {
+        payload.password = password;
+    }
+
+    // Send POST request to Flask
+    fetch("/update-provider", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+    .then(({ status, body }) => {
+        if (status === 200) {
+            alert("Provider updated successfully!");
+        } else {
+            alert("Error: " + (body.error || "Something went wrong"));
+            console.error("Details:", body.details || body);
+        }
+    })
+    .catch(error => {
+        alert("Request failed. Check console for details.");
+        console.error("Fetch error:", error);
+    });
+}
+    </script>
+</body>
+</html>

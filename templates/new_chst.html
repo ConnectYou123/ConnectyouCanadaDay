@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ConnectYou.pro - Service Provider Assistant</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .chatbot-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+      height: 700px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .chat-header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+      pointer-events: none;
+    }
+
+    .chat-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chat-header p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+    }
+
+    .message {
+      margin-bottom: 15px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.bot {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .message.user {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .bot-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .message-content {
+      background: white;
+      padding: 12px 16px;
+      border-radius: 18px;
+      max-width: 80%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .message.user .message-content {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+    }
+
+    .quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .quick-reply {
+      background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+      border: 1px solid #c7d2fe;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      color: #4f46e5;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .quick-reply:hover {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .chat-input {
+      padding: 20px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 25px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f9fafb;
+    }
+
+    .input-field:focus {
+      border-color: #4f46e5;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .send-button {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+    }
+
+    .send-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .send-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 18px;
+      margin-top: 10px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: #9ca3af;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }/* ===== Modern Chat Widget Styles (Glassmorphism + Effects) ===== */
+.chat-widget {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 10000;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    pointer-events: none;
+}
+
+.chat-widget * {
+    box-sizing: border-box;
+}
+
+.chat-toggle {
+    pointer-events: auto;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 68px;
+    height: 68px;
+    background: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+    color: #fff;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 8px 32px 0 rgba(54, 94, 254, 0.25), 0 2px 8px rgba(0,0,0,0.10);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    z-index: 2;
+    outline: none;
+    filter: drop-shadow(0 0 8px #60a5fa44);
+}
+
+.chat-toggle:hover, .chat-toggle:focus {
+    transform: scale(1.08) rotate(-8deg);
+    box-shadow: 0 12px 48px 0 rgba(54, 94, 254, 0.32), 0 4px 16px rgba(0,0,0,0.13);
+}
+
+.chat-box {
+    pointer-events: auto;
+    width: 370px;
+    height: 560px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 22px;
+    box-shadow: 0 16px 64px 0 rgba(54, 94, 254, 0.18), 0 2px 8px rgba(0,0,0,0.09);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+    transition: all 0.4s cubic-bezier(.4,1.4,.4,1);
+    position: absolute;
+    bottom: 78px;
+    right: -12px;
+    z-index: 1;
+    backdrop-filter: blur(16px) saturate(160%);
+    border: 1.5px solid rgba(99,102,241,0.13);
+}
+
+.chat-box.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.chat-header {
+    background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+    color: #fff;
+    padding: 22px 28px 18px 28px;
+    font-weight: 700;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 16px rgba(99,102,241,0.07);
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    position: relative;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 24px 18px 18px 18px;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #f3f4f6 60%, #e0e7ff 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+    height: 100%;
+    max-height: 100%;
+    border-bottom: 1px solid #e0e7ff;
+}
+
+.chat-message {
+    max-width: 82%;
+    padding: 13px 18px;
+    border-radius: 20px;
+    line-height: 1.5;
+    font-size: 15.5px;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.04);
+    animation: fadeIn 0.4s cubic-bezier(.4,1.4,.4,1);
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+
+.chat-message.user {
+    background: linear-gradient(135deg, #6366f1 65%, #38bdf8 100%);
+    color: #fff;
+    border-bottom-right-radius: 7px;
+    align-self: flex-end;
+    box-shadow: 0 2px 12px #6366f130;
+}
+
+.chat-message.bot {
+    background: rgba(255,255,255,0.93);
+    color: #312e81;
+    border-bottom-left-radius: 7px;
+    align-self: flex-start;
+    border: 1px solid #e0e7ff;
+}
+
+.chat-form {
+    padding: 24px 20px 16px 20px;
+    background: rgba(255,255,255,0.82);
+    border-top: 1.5px solid #e0e7ff;
+    border-bottom-right-radius: 22px;
+    border-bottom-left-radius: 22px;
+    box-shadow: 0 -2px 12px #6366f10c;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+}
+
+.chat-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.chat-contact-input {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1.5px solid #c7d2fe;
+    border-radius: 12px;
+    font-size: 15px;
+    background: rgba(243,244,246,0.95);
+    transition: border 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.chat-contact-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px #6366f13b;
+    background: #fff;
+}
+
+.chat-input-group {
+    margin-bottom: 0;
+}
+
+.chat-input {
+    width: 100%;
+    padding: 15px 17px;
+    border: 1.5px solid #c7d2fe;
+    border-radius: 12px;
+    resize: none;
+    font-size: 15.5px;
+    background: rgba(243,244,246,0.95);
+    max-height: 120px;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+.chat-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px #38bdf830;
+    background: #fff;
+}
+
+.chat-send-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 10px #6366f120;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.chat-send-btn:hover, .chat-send-btn:focus {
+    background: linear-gradient(90deg, #4338ca 0%, #0ea5e9 100%);
+    transform: translateY(-2px) scale(1.01);
+}
+
+.chat-send-btn:disabled {
+    background: #c7d2fe;
+    color: #64748b;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.chat-status {
+    text-align: center;
+    padding: 10px 0 0 0;
+    font-size: 13.5px;
+    border-radius: 8px;
+    transition: all 0.3s;
+    min-height: 19px;
+}
+
+.chat-status.error {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.chat-status.success {
+    background: #dcfce7;
+    color: #22c55e;
+}
+
+/* Category Buttons */
+#categoryButtonsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 0 0 0;
+    margin: 0 0 10px 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    justify-content: flex-start;
+}
+
+#categoryButtonsContainer button {
+    background: linear-gradient(135deg, #6366f1 70%, #38bdf8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 4px #6366f115;
+    outline: none;
+}
+
+#categoryButtonsContainer button:hover, #categoryButtonsContainer button:focus {
+    background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+    transform: scale(1.07);
+    box-shadow: 0 2px 12px #38bdf830;
+}
+
+#serviceListContainer {
+    background: rgba(236, 253, 245, 0.93);
+    padding: 18px 22px;
+    margin-top: 8px;
+    border-radius: 14px;
+    border-left: 5px solid #38bdf8;
+    font-size: 15px;
+    color: #0369a1;
+    box-shadow: 0 2px 8px #38bdf810;
+    animation: fadeIn 0.4s cubic-bezier(.4,1.4,.4,1);
+}
+
+#serviceListContainer h4 {
+    margin-bottom: 12px;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #0ea5e9;
+}
+
+#serviceListContainer ul {
+    list-style: disc inside;
+    padding-left: 0;
+    margin: 0;
+}
+
+#serviceListContainer li {
+    margin-bottom: 7px;
+    font-size: 15px;
+    color: #0369a1;
+}
+
+/* Typing Indicator */
+.chat-message.typing {
+    background: #e0e7ff;
+    width: 64px;
+    height: 26px;
+    padding: 8px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    box-shadow: 0 1px 4px #6366f115;
+}
+
+.chat-message.typing span {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: #6366f1;
+    border-radius: 50%;
+    animation: typing 1.3s infinite ease-in-out;
+}
+
+.chat-message.typing span:nth-child(2) { animation-delay: 0.15s; }
+.chat-message.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0.8); opacity: 0.6; }
+    40% { transform: scale(1.2); opacity: 1; }
+}
+
+/* Scrollbar Styling */
+.chat-messages::-webkit-scrollbar {
+    width: 7px;
+}
+.chat-messages::-webkit-scrollbar-track {
+    background: #e0e7ff;
+    border-radius: 4px;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 500px) {
+    .chat-widget {
+        bottom: 10px;
+        right: 10px;
+    }
+    .chat-box {
+        width: 98vw;
+        height: 90vh;
+        min-width: 0;
+        left: 1vw;
+        right: 1vw;
+        bottom: 75px;
+        border-radius: 18px;
+    }
+    .chat-toggle {
+        width: 54px;
+        height: 54px;
+        font-size: 22px;
+        right: calc(50vw - 27px);
+    }
+}
+
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+      }
+      30% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .service-card {
+      background: linear-gradient(135deg, #f0f9ff 0%, #f0f4ff 100%);
+      border: 1px solid #e0e7ff;
+      border-radius: 12px;
+      padding: 12px;
+      margin: 8px 0;
+      transition: all 0.2s ease;
+    }
+
+    .service-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .service-name {
+      font-weight: 600;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+
+    .service-description {
+      font-size: 0.85rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 768px) {
+      .chatbot-container {
+        height: 100vh;
+        border-radius: 0;
+        max-width: none;
+      }
+
+      .chat-header h1 {
+        font-size: 1.3rem;
+      }
+
+      .message-content {
+        max-width: 85%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chatbot-container">
+    <div class="chat-header">
+      <h1>ConnectYou.pro</h1>
+      <p>Find the perfect service provider for your needs</p>
+    </div>
+
+    <div class="chat-messages" id="messages">
+      <div class="message bot">
+        <div class="bot-avatar">CY</div>
+        <div class="message-content">
+          <p>Welcome to ConnectYou.pro! 👋</p>
+          <p>I'm here to help you find the perfect service provider for your needs. What type of service are you looking for?</p>
+          <div class="quick-replies">
+            <div class="quick-reply" onclick="sendQuickReply('Home Services')">🏠 Home Services</div>
+            <div class="quick-reply" onclick="sendQuickReply('Business Services')">💼 Business Services</div>
+            <div class="quick-reply" onclick="sendQuickReply('Personal Services')">👤 Personal Services</div>
+            <div class="quick-reply" onclick="sendQuickReply('Technology Services')">💻 Technology Services</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input
+        type="text"
+        class="input-field"
+        id="messageInput"
+        placeholder="Type your message..."
+        onkeypress="handleKeyPress(event)"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="send-button" onclick="sendMessage()" id="sendBtn" aria-label="Send message">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"></path>
+          <path d="M22 2L15 22L11 13"></path>
+          <path d="M22 2L2 9L11 13"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const messagesContainer = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let conversationState = {
+      stage: 'initial',
+      category: null,
+      location: null,
+      budget: null,
+      preferences: []
+    };
+
+    const serviceCategories = {
+      'Home Services': [
+        { name: 'Plumbing', description: 'Expert plumbers for repairs, installations, and maintenance' },
+        { name: 'Electrical', description: 'Licensed electricians for wiring, repairs, and installations' },
+        { name: 'Cleaning', description: 'Professional house cleaning and maintenance services' },
+        { name: 'Landscaping', description: 'Garden design, lawn care, and outdoor maintenance' },
+        { name: 'HVAC', description: 'Heating, ventilation, and air conditioning services' },
+        { name: 'Painting', description: 'Interior and exterior painting professionals' }
+      ],
+      'Business Services': [
+        { name: 'Marketing', description: 'Digital marketing, SEO, and advertising specialists' },
+        { name: 'Accounting', description: 'Bookkeeping, tax preparation, and financial consulting' },
+        { name: 'Legal', description: 'Business lawyers and legal consultation services' },
+        { name: 'IT Support', description: 'Technical support and IT infrastructure management' },
+        { name: 'Consulting', description: 'Business strategy and management consulting' },
+        { name: 'Design', description: 'Graphic design, branding, and creative services' }
+      ],
+      'Personal Services': [
+        { name: 'Fitness Training', description: 'Personal trainers and fitness coaching' },
+        { name: 'Tutoring', description: 'Academic tutoring and educational support' },
+        { name: 'Beauty & Wellness', description: 'Spa services, massage therapy, and wellness coaching' },
+        { name: 'Pet Care', description: 'Pet grooming, walking, and veterinary services' },
+        { name: 'Event Planning', description: 'Wedding planners and event coordination services' },
+        { name: 'Photography', description: 'Professional photographers for events and portraits' }
+      ],
+      'Technology Services': [
+        { name: 'Web Development', description: 'Custom websites and web application development' },
+        { name: 'Mobile Apps', description: 'iOS and Android app development services' },
+        { name: 'Data Analysis', description: 'Business intelligence and data science consulting' },
+        { name: 'Cybersecurity', description: 'Network security and data protection services' },
+        { name: 'Cloud Services', description: 'Cloud migration and infrastructure management' },
+        { name: 'Software Development', description: 'Custom software solutions and integrations' }
+      ]
+    };
+
+    function addMessage(content, isUser = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+      if (isUser) {
+        messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+      } else {
+        messageDiv.innerHTML = `
+          <div class="bot-avatar">CY</div>
+          <div class="message-content">${content}</div>
+        `;
+      }
+
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      return messageDiv;
+    }
+
+    function showTyping() {
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'message bot';
+      typingDiv.innerHTML = `
+        <div class="bot-avatar">CY</div>
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      messagesContainer.appendChild(typingDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return typingDiv;
+    }
+
+    function processMessage(message) {
+      const typing = showTyping();
+
+      setTimeout(() => {
+        typing.remove();
+
+        const lowerMessage = message.toLowerCase();
+        let response = '';
+
+        switch (conversationState.stage) {
+          case 'initial':
+            if (serviceCategories[message]) {
+              conversationState.category = message;
+              conversationState.stage = 'category_selected';
+              response = handleCategorySelection(message);
+            } else {
+              response = handleGeneralQuery(message);
+            }
+            break;
+
+          case 'category_selected':
+            if (lowerMessage.includes('location') || lowerMessage.includes('area') || lowerMessage.includes('city')) {
+              conversationState.stage = 'location_gathering';
+              response = `Great! What's your location or preferred service area? This helps me find providers near you.`;
+            } else if (lowerMessage.includes('budget') || lowerMessage.includes('price') || lowerMessage.includes('cost')) {
+              conversationState.stage = 'budget_gathering';
+              response = `What's your budget range for this service? (e.g., $50-100, $500-1000, etc.)`;
+            } else {
+              response = handleServiceInquiry(message);
+            }
+            break;
+
+          case 'location_gathering':
+            conversationState.location = message;
+            conversationState.stage = 'details_gathering';
+            response = `Perfect! I've noted your location as ${message}.<br><br>Now, do you have any specific requirements or preferences for your ${conversationState.category.toLowerCase()} service?`;
+            break;
+
+          case 'budget_gathering':
+            conversationState.budget = message;
+            conversationState.stage = 'details_gathering';
+            response = `Thanks for sharing your budget range of ${message}.<br><br>Are there any specific requirements or preferences you have for your ${conversationState.category.toLowerCase()} service?`;
+            break;
+
+          case 'details_gathering':
+            conversationState.preferences.push(message);
+            response = generateRecommendations();
+            break;
+
+          default:
+            response = handleGeneralQuery(message);
+        }
+
+        addMessage(response);
+      }, 1000 + Math.random() * 1000);
+    }
+
+    function handleCategorySelection(category) {
+      const services = serviceCategories[category];
+      let response = `Excellent choice! Here are the ${category.toLowerCase()} we can help you find:<br><br>`;
+
+      services.forEach(service => {
+        response += `
+          <div class="service-card">
+            <div class="service-name">${service.name}</div>
+            <div class="service-description">${service.description}</div>
+          </div>
+        `;
+      });
+
+      response += `<br>Which of these services interests you most? Or would you like to provide your location and budget to get personalized recommendations?`;
+      return response;
+    }
+
+    function handleServiceInquiry() {
+      const responses = [
+        `I'd be happy to help you find the right provider for that! To give you the best recommendations, could you share your location?`,
+        `Great choice! Let me help you find qualified providers. What's your preferred location or service area?`,
+        `Perfect! I can connect you with excellent providers for that service. What's your budget range?`,
+        `Excellent! To match you with the best providers, could you tell me more about your specific needs?`
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+
+    function handleGeneralQuery(message) {
+      const lowerMessage = message.toLowerCase();
+
+      if (lowerMessage.includes('help') || lowerMessage.includes('how') || lowerMessage.includes('what')) {
+        return `I'm here to help you find the perfect service provider! 🎯<br><br>Here's how I can assist you:<br>• Find providers in your area<br>• Match you based on your budget<br>• Connect you with highly-rated professionals<br>• Provide detailed service information<br><br>What type of service are you looking for?`;
+      } else if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('budget')) {
+        return `Pricing varies based on the service and provider. I can help you find options within your budget! What's your preferred price range and what service do you need?`;
+      } else if (lowerMessage.includes('location') || lowerMessage.includes('area') || lowerMessage.includes('near')) {
+        return `We connect you with local service providers in your area! What's your location and what type of service do you need?`;
+      } else {
+        return `I can help you find the perfect service provider! Could you tell me:<br>• What type of service you need<br>• Your location<br>• Your budget range<br><br>Or choose from our main categories above! 😊`;
+      }
+    }
+
+    function generateRecommendations() {
+      const category = conversationState.category || 'the service you need';
+      const location = conversationState.location || 'your area';
+      const budget = conversationState.budget || 'your budget';
+
+      const locationText = location && location !== 'your area' ? location : 'your area';
+
+      return `Perfect! Based on your requirements, I'm searching for ${category.toLowerCase()} providers in ${locationText} within ${budget}.<br><br>
+        🔍 <strong>Here's what I'm doing for you:</strong><br>
+        • Searching our network of verified professionals<br>
+        • Filtering by location and budget<br>
+        • Checking ratings and reviews<br>
+        • Matching your specific preferences<br><br>
+        📋 <strong>Next Steps:</strong><br>
+        1. I'll send you a curated list of 3-5 top providers<br>
+        2. You can view their profiles and reviews<br>
+        3. Contact them directly through our platform<br>
+        4. Schedule consultations or get quotes<br><br>
+        💡 <strong>Would you like me to:</strong><br>
+        • Send you the provider recommendations now?<br>
+        • Help you with a different service?<br>
+        • Answer any questions about our platform?<br><br>
+        You can also visit <strong>connectyou.pro</strong> to browse all available providers in your area! 🌐`;
+    }
+
+    function sendQuickReply(text) {
+      addMessage(text, true);
+      processMessage(text);
+    }
+
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      addMessage(message, true);
+      messageInput.value = '';
+      processMessage(message);
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // Focus input on page load
+    window.addEventListener('load', () => {
+      messageInput.focus();
+    });
+  </script>
+</body>
+</html>

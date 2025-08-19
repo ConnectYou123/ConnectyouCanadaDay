@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting List - Admin Dashboard</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .application-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        .status-approved {
+            background: rgba(25, 135, 84, 0.2);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        .status-rejected {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+        .hidden-entry {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .section-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .category-header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        .btn-hide {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        .btn-hide:hover {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        .city-badge {
+            background: rgba(0, 123, 255, 0.2);
+            color: #007bff;
+            border: 1px solid #007bff;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .category-badge {
+            background: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border: 1px solid #6c757d;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-list-ul me-3"></i>
+                        Waiting List Management
+                    </h1>
+                    <p class="text-muted mb-0">Manage service provider applications and waiting list entries</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="/admin/providers" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Providers
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- City Selection -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="stats-card">
+                    <h6 class="mb-3">
+                        <i class="fas fa-map-marker-alt me-2"></i>Filter by City
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('admin_waiting_list', city='All Cities') }}" 
+                           class="btn btn-sm {% if selected_city == 'All Cities' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-globe me-1"></i>All Cities
+                        </a>
+                        {% for city in cities %}
+                        <a href="{{ url_for('admin_waiting_list', city=city) }}" 
+                           class="btn btn-sm {% if selected_city == city %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ city }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% if selected_city != 'All Cities' %}
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-filter me-1"></i>Currently showing: <strong>{{ selected_city }}</strong>
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        <h3 class="mb-0">{{ stats.pending_applications }}</h3>
+                    </div>
+                    <p class="text-muted mb-0">Pending Applications</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <h3 class="mb-0">{{ stats.approved_applications }}</h3>
+                    </div>
+                    <p class="text-muted mb-0">Approved Applications</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-times text-danger me-2"></i>
+                        <h3 class="mb-0">{{ stats.rejected_applications }}</h3>
+                    </div>
+                    <p class="text-muted mb-0">Rejected Applications</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-list text-info me-2"></i>
+                        <h3 class="mb-0">{{ stats.total_waiting_list }}</h3>
+                    </div>
+                    <p class="text-muted mb-0">Waiting List Entries</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Count -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="stats-card">
+                    <h6 class="mb-3">
+                        <i class="fas fa-tags me-2"></i>Service Categories
+                    </h6>
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <span class="badge bg-info fs-6">{{ stats.categories_count }} Categories</span>
+                        </div>
+                        <div class="text-muted">
+                            <small>All entries are organized by service category below</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category-Based Organization -->
+        <div class="row">
+            <div class="col-12">
+                <div class="accordion" id="categoryAccordion">
+                    
+                    <!-- Pending Applications by Category -->
+                    {% if pending_by_category %}
+                    <div class="accordion-item bg-transparent border-0 mb-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button bg-transparent text-white border-0 shadow-none section-header p-3"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#pendingCategoryCollapse" aria-expanded="true"
+                                aria-controls="pendingCategoryCollapse">
+                                <i class="fas fa-clock me-2"></i>Pending Applications by Category ({{ pending_applications|length }})
+                            </button>
+                        </h2>
+                        <div id="pendingCategoryCollapse" class="accordion-collapse collapse show" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body p-0">
+                                {% for category, applications in pending_by_category.items() %}
+                                <div class="accordion mb-2" id="pendingCategory{{ loop.index }}">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none category-header p-2"
+                                                type="button" data-bs-toggle="collapse" data-bs-target="#pendingCat{{ loop.index }}"
+                                                aria-expanded="false" aria-controls="pendingCat{{ loop.index }}">
+                                                <i class="fas fa-wrench me-2"></i>{{ category }} ({{ applications|length }})
+                                            </button>
+                                        </h3>
+                                        <div id="pendingCat{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#pendingCategory{{ loop.index }}">
+                                            <div class="accordion-body p-0">
+                                                {% for application in applications %}
+                                                <div class="application-card" id="entry-{{ application.id }}">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <h5 class="mb-0 me-3">{{ application.provider_name }}</h5>
+                                                                {% if application.city %}
+                                                                    <span class="city-badge me-2">{{ application.city }}</span>
+                                                                {% endif %}
+                                                                <span class="status-badge status-pending">Pending</span>
+                                                            </div>
+                                                            <p class="mb-1"><strong>Phone:</strong> {{ application.provider_phone }}</p>
+                                                            {% if application.business_address %}
+                                                                <p class="mb-1"><strong>Address:</strong> {{ application.business_address }}</p>
+                                                            {% endif %}
+                                                            {% if application.rating %}
+                                                                <p class="mb-1"><strong>Rating:</strong> {{ application.rating }}⭐</p>
+                                                            {% endif %}
+                                                            {% if application.review_count %}
+                                                                <p class="mb-1"><strong>Reviews:</strong> {{ application.review_count }}</p>
+                                                            {% endif %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-calendar me-1"></i>{{ application.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="col-md-4 text-end">
+                                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                                <button class="btn btn-success btn-sm" onclick="approveApplication({{ application.id }})" title="Approve">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                                <button class="btn btn-danger btn-sm" onclick="rejectApplication({{ application.id }})" title="Reject">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                                <button class="btn btn-danger btn-sm" onclick="deleteEntry({{ application.id }})" title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Approved Applications by Category -->
+                    {% if approved_by_category %}
+                    <div class="accordion-item bg-transparent border-0 mb-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none section-header p-3"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#approvedCategoryCollapse" aria-expanded="false"
+                                aria-controls="approvedCategoryCollapse">
+                                <i class="fas fa-check-circle me-2"></i>Approved Applications by Category ({{ approved_applications|length }})
+                            </button>
+                        </h2>
+                        <div id="approvedCategoryCollapse" class="accordion-collapse collapse" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body p-0">
+                                {% for category, applications in approved_by_category.items() %}
+                                <div class="accordion mb-2" id="approvedCategory{{ loop.index }}">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none category-header p-2"
+                                                type="button" data-bs-toggle="collapse" data-bs-target="#approvedCat{{ loop.index }}"
+                                                aria-expanded="false" aria-controls="approvedCat{{ loop.index }}">
+                                                <i class="fas fa-wrench me-2"></i>{{ category }} ({{ applications|length }})
+                                            </button>
+                                        </h3>
+                                        <div id="approvedCat{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#approvedCategory{{ loop.index }}">
+                                            <div class="accordion-body p-0">
+                                                {% for application in applications %}
+                                                <div class="application-card" id="entry-{{ application.id }}">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <h5 class="mb-0 me-3">{{ application.provider_name }}</h5>
+                                                                {% if application.city %}
+                                                                    <span class="city-badge me-2">{{ application.city }}</span>
+                                                                {% endif %}
+                                                                <span class="status-badge status-approved">Approved</span>
+                                                            </div>
+                                                            <p class="mb-1"><strong>Phone:</strong> {{ application.provider_phone }}</p>
+                                                            {% if application.business_address %}
+                                                                <p class="mb-1"><strong>Address:</strong> {{ application.business_address }}</p>
+                                                            {% endif %}
+                                                            {% if application.rating %}
+                                                                <p class="mb-1"><strong>Rating:</strong> {{ application.rating }}⭐</p>
+                                                            {% endif %}
+                                                            {% if application.review_count %}
+                                                                <p class="mb-1"><strong>Reviews:</strong> {{ application.review_count }}</p>
+                                                            {% endif %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-calendar me-1"></i>{{ application.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="col-md-4 text-end">
+                                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                                <button class="btn btn-warning btn-sm" onclick="editApprovedProvider({{ application.id }})" title="Edit">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <button class="btn btn-danger btn-sm" onclick="deleteEntry({{ application.id }})" title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Waiting List by Category -->
+                    {% if waiting_list_by_category %}
+                    <div class="accordion-item bg-transparent border-0 mb-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none section-header p-3"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#waitingListCategoryCollapse" aria-expanded="false"
+                                aria-controls="waitingListCategoryCollapse">
+                                <i class="fas fa-list me-2"></i>Waiting List by Category ({{ waiting_list_entries|length }})
+                            </button>
+                        </h2>
+                        <div id="waitingListCategoryCollapse" class="accordion-collapse collapse" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body p-0">
+                                {% for category, entries in waiting_list_by_category.items() %}
+                                <div class="accordion mb-2" id="waitingCategory{{ loop.index }}">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none category-header p-2"
+                                                type="button" data-bs-toggle="collapse" data-bs-target="#waitingCat{{ loop.index }}"
+                                                aria-expanded="false" aria-controls="waitingCat{{ loop.index }}">
+                                                <i class="fas fa-wrench me-2"></i>{{ category }} ({{ entries|length }})
+                                            </button>
+                                        </h3>
+                                        <div id="waitingCat{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#waitingCategory{{ loop.index }}">
+                                            <div class="accordion-body p-0">
+                                                {% for entry in entries %}
+                                                <div class="application-card{% if entry.is_hidden %} hidden-entry{% endif %}" id="entry-{{ entry.id }}">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <h5 class="mb-0 me-3">{{ entry.provider_name }}</h5>
+                                                                {% if entry.city %}
+                                                                    <span class="city-badge me-2">{{ entry.city }}</span>
+                                                                {% endif %}
+                                                                <span class="badge bg-info">Waiting</span>
+                                                            </div>
+                                                            <p class="mb-1"><strong>Phone:</strong> {{ entry.provider_phone }}</p>
+                                                            {% if entry.business_address %}
+                                                                <p class="mb-1"><strong>Address:</strong> {{ entry.business_address }}</p>
+                                                            {% endif %}
+                                                            {% if entry.rating %}
+                                                                <p class="mb-1"><strong>Rating:</strong> {{ entry.rating }}⭐</p>
+                                                            {% endif %}
+                                                            {% if entry.review_count %}
+                                                                <p class="mb-1"><strong>Reviews:</strong> {{ entry.review_count }}</p>
+                                                            {% endif %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-calendar me-1"></i>{{ entry.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="col-md-4 text-end">
+                                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                                <button class="btn btn-success btn-sm" onclick="approveApplication({{ entry.id }})" title="Approve">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                                <button class="btn btn-danger btn-sm" onclick="rejectApplication({{ entry.id }})" title="Reject">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                                <button class="btn btn-hide btn-sm toggle-hide-btn" 
+                                                                        data-entry-id="{{ entry.id }}"
+                                                                        title="{{ 'Unhide' if entry.is_hidden else 'Hide' }}">
+                                                                    <i class="fas {{ 'fa-eye' if entry.is_hidden else 'fa-eye-slash' }}"></i>
+                                                                </button>
+                                                                <button class="btn btn-danger btn-sm" onclick="deleteEntry({{ entry.id }})" title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Rejected Applications by Category -->
+                    {% if rejected_by_category %}
+                    <div class="accordion-item bg-transparent border-0 mb-4">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none section-header p-3"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#rejectedCategoryCollapse" aria-expanded="false"
+                                aria-controls="rejectedCategoryCollapse">
+                                <i class="fas fa-times-circle me-2"></i>Rejected Applications by Category ({{ rejected_applications|length }})
+                            </button>
+                        </h2>
+                        <div id="rejectedCategoryCollapse" class="accordion-collapse collapse" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body p-0">
+                                {% for category, applications in rejected_by_category.items() %}
+                                <div class="accordion mb-2" id="rejectedCategory{{ loop.index }}">
+                                    <div class="accordion-item bg-transparent border-0">
+                                        <h3 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-transparent text-white border-0 shadow-none category-header p-2"
+                                                type="button" data-bs-toggle="collapse" data-bs-target="#rejectedCat{{ loop.index }}"
+                                                aria-expanded="false" aria-controls="rejectedCat{{ loop.index }}">
+                                                <i class="fas fa-wrench me-2"></i>{{ category }} ({{ applications|length }})
+                                            </button>
+                                        </h3>
+                                        <div id="rejectedCat{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#rejectedCategory{{ loop.index }}">
+                                            <div class="accordion-body p-0">
+                                                {% for application in applications %}
+                                                <div class="application-card" id="entry-{{ application.id }}">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <h5 class="mb-0 me-3">{{ application.provider_name }}</h5>
+                                                                {% if application.city %}
+                                                                    <span class="city-badge me-2">{{ application.city }}</span>
+                                                                {% endif %}
+                                                                <span class="status-badge status-rejected">Rejected</span>
+                                                            </div>
+                                                            <p class="mb-1"><strong>Phone:</strong> {{ application.provider_phone }}</p>
+                                                            {% if application.business_address %}
+                                                                <p class="mb-1"><strong>Address:</strong> {{ application.business_address }}</p>
+                                                            {% endif %}
+                                                            {% if application.rating %}
+                                                                <p class="mb-1"><strong>Rating:</strong> {{ application.rating }}⭐</p>
+                                                            {% endif %}
+                                                            {% if application.review_count %}
+                                                                <p class="mb-1"><strong>Reviews:</strong> {{ application.review_count }}</p>
+                                                            {% endif %}
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-calendar me-1"></i>{{ application.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="col-md-4 text-end">
+                                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                                <button class="btn btn-danger btn-sm" onclick="deleteEntry({{ application.id }})" title="Delete">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Provider Modal -->
+    <div class="modal fade" id="editProviderModal" tabindex="-1" aria-labelledby="editProviderModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProviderModalLabel">Edit Provider</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProviderForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderName" class="form-label">Provider Name</label>
+                                    <input type="text" class="form-control" id="editProviderName" name="provider_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderPhone" class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" id="editProviderPhone" name="provider_phone" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="editProviderEmail" name="user_email">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderWebsite" class="form-label">Website</label>
+                                    <input type="url" class="form-control" id="editProviderWebsite" name="website">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editProviderAddress" class="form-label">Business Address</label>
+                            <textarea class="form-control" id="editProviderAddress" name="business_address" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editProviderCity" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="editProviderCity" name="city">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editProviderProvince" class="form-label">Province</label>
+                                    <input type="text" class="form-control" id="editProviderProvince" name="province">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editProviderPostalCode" class="form-label">Postal Code</label>
+                                    <input type="text" class="form-control" id="editProviderPostalCode" name="postal_code">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderRating" class="form-label">Rating</label>
+                                    <input type="number" class="form-control" id="editProviderRating" name="star_rating" min="1" max="5" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editProviderReviews" class="form-label">Review Count</label>
+                                    <input type="number" class="form-control" id="editProviderReviews" name="review_count" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editProviderDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editProviderDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <input type="hidden" id="editProviderEntryId" name="entry_id">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProviderEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle hide/show functionality for waiting list entries
+        document.querySelectorAll('.toggle-hide-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const entryId = this.dataset.entryId;
+                
+                fetch(`/api/service-provider-report/${entryId}/hide`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const entryCard = document.getElementById(`entry-${entryId}`);
+                        const icon = this.querySelector('i');
+                        
+                        if (data.is_hidden) {
+                            entryCard.classList.add('hidden-entry');
+                            icon.className = 'fas fa-eye';
+                            this.title = 'Unhide';
+                        } else {
+                            entryCard.classList.remove('hidden-entry');
+                            icon.className = 'fas fa-eye-slash';
+                            this.title = 'Hide';
+                        }
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating entry visibility');
+                });
+            });
+        });
+
+        // Delete entry functionality
+        function deleteEntry(entryId) {
+            if (confirm('Are you sure you want to delete this entry? This action cannot be undone.')) {
+                fetch(`/admin/delete_entry/${entryId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const entryCard = document.getElementById(`entry-${entryId}`);
+                        entryCard.style.opacity = '0.5';
+                        entryCard.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            entryCard.remove();
+                        }, 300);
+                        
+                        // Show success message
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success alert-dismissible fade show';
+                        alert.innerHTML = `
+                            <strong>Success!</strong> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.dashboard-header'));
+                        
+                        // Auto-dismiss after 5 seconds
+                        setTimeout(() => {
+                            alert.remove();
+                        }, 5000);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting entry');
+                });
+            }
+        }
+
+        // Approve application functionality
+        function approveApplication(applicationId) {
+            if (confirm('Are you sure you want to approve this application?')) {
+                fetch(`/approve_application/${applicationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload(); // Reload to show updated status
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error approving application');
+                });
+            }
+        }
+
+        // Reject application functionality
+        function rejectApplication(applicationId) {
+            if (confirm('Are you sure you want to reject this application?')) {
+                fetch(`/reject_application/${applicationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload(); // Reload to show updated status
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error rejecting application');
+                });
+            }
+        }
+
+        // Edit approved provider functionality
+        function editApprovedProvider(entryId) {
+            // Get provider data
+            fetch(`/admin/get_provider_data/${entryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const provider = data.provider;
+                        
+                        // Populate form fields
+                        document.getElementById('editProviderName').value = provider.provider_name || '';
+                        document.getElementById('editProviderPhone').value = provider.provider_phone || '';
+                        document.getElementById('editProviderEmail').value = provider.user_email || '';
+                        document.getElementById('editProviderWebsite').value = provider.website || '';
+                        document.getElementById('editProviderAddress').value = provider.business_address || '';
+                        document.getElementById('editProviderCity').value = provider.city || '';
+                        document.getElementById('editProviderProvince').value = provider.province || '';
+                        document.getElementById('editProviderPostalCode').value = provider.postal_code || '';
+                        document.getElementById('editProviderRating').value = provider.star_rating || '';
+                        document.getElementById('editProviderReviews').value = provider.review_count || '';
+                        document.getElementById('editProviderDescription').value = provider.description || '';
+                        document.getElementById('editProviderEntryId').value = entryId;
+                        
+                        // Show modal
+                        const modal = new bootstrap.Modal(document.getElementById('editProviderModal'));
+                        modal.show();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading provider data');
+                });
+        }
+
+        // Save provider edit functionality
+        function saveProviderEdit() {
+            const form = document.getElementById('editProviderForm');
+            const formData = new FormData(form);
+            const entryId = document.getElementById('editProviderEntryId').value;
+            
+            // Convert FormData to JSON
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            
+            fetch(`/admin/edit_provider/${entryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editProviderModal'));
+                    modal.hide();
+                    
+                    // Reload page to show changes
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving changes');
+            });
+        }
+    </script>
+</body>
+</html>

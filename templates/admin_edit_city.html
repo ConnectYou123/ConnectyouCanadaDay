@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Edit City - Admin Panel{% endblock %}
+
+{% block content %}
+<link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 text-white">
+                            <i class="fas fa-edit me-2 text-warning"></i>
+                            Edit City
+                        </h4>
+                        <a href="{{ url_for('admin_cities') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Cities
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" id="editCityForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label text-white">
+                                <i class="fas fa-city me-2"></i>City Name *
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ city.name }}" placeholder="Enter city name" required maxlength="100">
+                            <div class="form-text">Enter the official city name (e.g., Toronto, Vancouver)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="country" class="form-label text-white">
+                                <i class="fas fa-globe me-2"></i>Country *
+                            </label>
+                            <select class="form-select" id="country" name="country" required>
+                                <option value="">Select a country</option>
+                                <option value="Canada" {{ 'selected' if city.country == 'Canada' }}>Canada</option>
+                                <option value="United States" {{ 'selected' if city.country == 'United States' }}>United States</option>
+                                <option value="United Kingdom" {{ 'selected' if city.country == 'United Kingdom' }}>United Kingdom</option>
+                                <option value="Australia" {{ 'selected' if city.country == 'Australia' }}>Australia</option>
+                                <option value="Germany" {{ 'selected' if city.country == 'Germany' }}>Germany</option>
+                                <option value="France" {{ 'selected' if city.country == 'France' }}>France</option>
+                                <option value="Italy" {{ 'selected' if city.country == 'Italy' }}>Italy</option>
+                                <option value="Spain" {{ 'selected' if city.country == 'Spain' }}>Spain</option>
+                                <option value="Netherlands" {{ 'selected' if city.country == 'Netherlands' }}>Netherlands</option>
+                                <option value="Sweden" {{ 'selected' if city.country == 'Sweden' }}>Sweden</option>
+                                <option value="Norway" {{ 'selected' if city.country == 'Norway' }}>Norway</option>
+                                <option value="Denmark" {{ 'selected' if city.country == 'Denmark' }}>Denmark</option>
+                                <option value="Japan" {{ 'selected' if city.country == 'Japan' }}>Japan</option>
+                                <option value="South Korea" {{ 'selected' if city.country == 'South Korea' }}>South Korea</option>
+                                <option value="Singapore" {{ 'selected' if city.country == 'Singapore' }}>Singapore</option>
+                                <option value="New Zealand" {{ 'selected' if city.country == 'New Zealand' }}>New Zealand</option>
+                            </select>
+                            <div class="form-text">Select the country where this city is located</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="flag" class="form-label text-white">
+                                <i class="fas fa-flag me-2"></i>Flag Emoji *
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="flag" name="flag" 
+                                       value="{{ city.flag_emoji }}" placeholder="🇨🇦" required maxlength="10" style="font-size: 1.2rem;">
+                                <button type="button" class="btn btn-outline-info" id="flagPreview" disabled>
+                                    Preview
+                                </button>
+                            </div>
+                            <div class="form-text">Enter the country flag emoji (e.g., 🇨🇦 for Canada, 🇺🇸 for USA)</div>
+                            
+                            <!-- Common flags for quick selection -->
+                            <div class="mt-2">
+                                <small class="text-muted">Quick select:</small>
+                                <div class="d-flex gap-2 mt-1 flex-wrap">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇨🇦" data-country="Canada">🇨🇦 Canada</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇺🇸" data-country="United States">🇺🇸 USA</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇬🇧" data-country="United Kingdom">🇬🇧 UK</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇦🇺" data-country="Australia">🇦🇺 Australia</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇩🇪" data-country="Germany">🇩🇪 Germany</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm flag-btn" data-flag="🇫🇷" data-country="France">🇫🇷 France</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="status" class="form-label text-white">
+                                <i class="fas fa-toggle-on me-2"></i>Status
+                            </label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="active" {{ 'selected' if city.status == 'active' }}>Active</option>
+                                <option value="inactive" {{ 'selected' if city.status == 'inactive' }}>Inactive</option>
+                            </select>
+                            <div class="form-text">
+                                Inactive cities will be hidden from the public interface but preserved in the database
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-warning" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>Update City
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Preview Card -->
+            <div class="card mt-4" id="previewCard">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-eye me-2"></i>Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <span id="previewFlag" style="font-size: 2rem;" class="me-3">{{ city.flag_emoji }}</span>
+                        <div>
+                            <h5 class="mb-1 text-white" id="previewName">{{ city.name }}</h5>
+                            <small class="text-muted" id="previewCountry">{{ city.country }}</small>
+                            <div class="mt-1">
+                                <span class="badge bg-{{ 'success' if city.status == 'active' else 'secondary' }}" id="previewStatus">
+                                    {{ city.status.title() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- City Statistics -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-chart-bar me-2"></i>City Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h3 class="text-primary mb-1">{{ city.provider_count }}</h3>
+                                <small class="text-muted">Service Providers</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-info mb-1">{{ city.category_count }}</h3>
+                            <small class="text-muted">Service Categories</small>
+                        </div>
+                    </div>
+                    {% if city.provider_count > 0 %}
+                        <div class="mt-3">
+                            <small class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                This city has {{ city.provider_count }} service providers. 
+                                Setting status to "Inactive" will hide them from public view.
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Flag button functionality
+document.querySelectorAll('.flag-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const flag = this.dataset.flag;
+        const country = this.dataset.country;
+        
+        document.getElementById('flag').value = flag;
+        document.getElementById('country').value = country;
+        updatePreview();
+    });
+});
+
+// Real-time preview
+function updatePreview() {
+    const name = document.getElementById('name').value || '{{ city.name }}';
+    const country = document.getElementById('country').value || '{{ city.country }}';
+    const flag = document.getElementById('flag').value || '{{ city.flag }}';
+    const status = document.getElementById('status').value || '{{ city.status }}';
+    
+    document.getElementById('previewName').textContent = name;
+    document.getElementById('previewCountry').textContent = country;
+    document.getElementById('previewFlag').textContent = flag;
+    
+    const statusBadge = document.getElementById('previewStatus');
+    statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    statusBadge.className = 'badge bg-' + (status === 'active' ? 'success' : 'secondary');
+}
+
+// Add event listeners for real-time preview
+document.getElementById('name').addEventListener('input', updatePreview);
+document.getElementById('country').addEventListener('change', updatePreview);
+document.getElementById('flag').addEventListener('input', updatePreview);
+document.getElementById('status').addEventListener('change', updatePreview);
+
+// Form validation
+document.getElementById('editCityForm').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const country = document.getElementById('country').value;
+    const flag = document.getElementById('flag').value.trim();
+    
+    if (!name || !country || !flag) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    // Disable submit button to prevent double submission
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+});
+
+// Flag validation - basic emoji detection
+document.getElementById('flag').addEventListener('input', function() {
+    const flagInput = this.value;
+   const isEmoji = /[\u{1F1E0}-\u{1F1FF}]/u.test(flagInput) 
+  || /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u2600-\u26FF]|[\u2700-\u27BF]/u.test(flagInput);
+
+    
+    if (flagInput && !isEmoji) {
+        this.setCustomValidity('Please enter a valid emoji flag');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+
+{% endblock %}

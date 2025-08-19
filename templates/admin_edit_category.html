@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Category - ConnectYou Admin</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+        }
+        .form-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+            color: white;
+        }
+        .btn-save {
+            background: linear-gradient(45deg, #6f42c1, #6610f2);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.4);
+        }
+        .section-header {
+            background: rgba(111, 66, 193, 0.1);
+            border-left: 4px solid #6f42c1;
+            padding: 1rem;
+            margin: 2rem 0 1rem 0;
+            border-radius: 8px;
+        }
+        .preview-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border: 1px solid rgba(111, 66, 193, 0.3);
+            transition: all 0.3s ease;
+        }
+        .preview-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.2);
+        }
+        .preview-title {
+            color: #6f42c1;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="form-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tag me-3"></i>Edit Category</h2>
+                        <a href="{{ url_for('admin_providers', city=category.city_name) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Providers
+                        </a>
+                    </div>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category_type, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category_type == 'danger' else 'success' }} alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-{{ 'exclamation-triangle' if category_type == 'danger' else 'check-circle' }} me-2"></i>
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('admin_edit_category', category_id=category.id) }}">
+                        <!-- Category Information -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-tag me-2"></i>Category Details</h5>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="category_name" class="form-label">Category Name *</label>
+                            <input type="text" class="form-control" id="category_name" name="name" value="{{ category.name }}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ category.description }}</textarea>
+                        </div>
+
+                        <!-- Icon Selection -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-icons me-2"></i>Category Icon</h5>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-3">
+                                {% set icons = [
+                                    ('fas fa-tools', 'Tools'),
+                                    ('fas fa-faucet', 'Plumbing'),
+                                    ('fas fa-bolt', 'Electrical'),
+                                    ('fas fa-broom', 'Cleaning'),
+                                    ('fas fa-leaf', 'Garden'),
+                                    ('fas fa-laptop-house', 'Tech')
+                                ] %}
+                                {% for icon_value, label in icons %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="icon" id="icon-{{ loop.index }}" value="{{ icon_value }}" {% if category.icon == icon_value %}checked{% endif %}>
+                                    <label class="form-check-label" for="icon-{{ loop.index }}">
+                                        <i class="{{ icon_value }} fa-2x"></i> {{ label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Status Selection -->
+                        <div class="section-header">
+                            <h5 class="mb-0"><i class="fas fa-toggle-on me-2"></i>Status Settings</h5>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="status" class="form-label">Category Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="active" {% if category.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if category.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                <option value="pending" {% if category.status == 'pending' %}selected{% endif %}>Pending Review</option>
+                            </select>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-end gap-3 mt-4">
+                            <a href="{{ url_for('admin_providers', city=category.city_name) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save me-2"></i>Update Category
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Add Contact - {{ contact_list.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-xl-6 mx-auto">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('contact_list', list_id=contact_list.id) }}">{{ contact_list.name }}</a></li>
+                <li class="breadcrumb-item active">Add Contact</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Add New Contact
+                </h4>
+                <p class="text-muted mb-0 mt-1">
+                    Adding to: <strong>{{ contact_list.name }}</strong> 
+                    ({{ contact_list.contact_count }}/6 contacts)
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-user me-1"></i>
+                                Full Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="Enter full name">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone_number" class="form-label">
+                                <i class="fas fa-phone me-1"></i>
+                                Phone Number <span class="text-danger">*</span>
+                            </label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number" required 
+                                   placeholder="(555) 123-4567" pattern="[\+]?[0-9\s\-\(\)]+">
+                            <div class="form-text">Include country code if outside US (e.g., +1 for US numbers)</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>
+                                Email Address
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="email@company.com">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="position" class="form-label">
+                                <i class="fas fa-briefcase me-1"></i>
+                                Position/Role
+                            </label>
+                            <input type="text" class="form-control" id="position" name="position" 
+                                   placeholder="e.g., Software Engineer">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="department" class="form-label">
+                            <i class="fas fa-building me-1"></i>
+                            Department
+                        </label>
+                        <select class="form-select" id="department" name="department">
+                            <option value="">Select Department</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Human Resources">Human Resources</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Customer Success">Customer Success</option>
+                            <option value="Legal">Legal</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">
+                            <i class="fas fa-sticky-note me-1"></i>
+                            Notes
+                        </label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Additional information about this contact..."></textarea>
+                        <div class="form-text">Optional notes for onboarding, training needs, or other relevant information</div>
+                    </div>
+
+                    <!-- Contact limit warning -->
+                    {% if contact_list.contact_count >= 5 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Almost Full:</strong> This contact list will be at capacity after adding this contact. 
+                        Contact lists are limited to 6 contacts each for optimal management.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('contact_list', list_id=contact_list.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Add Contact
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Guidelines Card -->
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Best Practices
+                </h6>
+                <ul class="mb-0 small text-muted">
+                    <li>Use complete names for professional identification</li>
+                    <li>Include country codes for international numbers</li>
+                    <li>Add position and department for role-based communications</li>
+                    <li>Use notes to track onboarding progress and training needs</li>
+                    <li>Keep contact lists focused (max 6 contacts per list)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Phone number formatting
+    const phoneInput = document.getElementById('phone_number');
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length >= 10) {
+            // Format as (XXX) XXX-XXXX for US numbers
+            if (value.length === 10) {
+                value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6,10)}`;
+            } else if (value.length === 11 && value[0] === '1') {
+                value = `+1 (${value.slice(1,4)}) ${value.slice(4,7)}-${value.slice(7,11)}`;
+            }
+        }
+        
+        e.target.value = value;
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const phone = document.getElementById('phone_number').value.trim();
+        
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a name for the contact.');
+            document.getElementById('name').focus();
+            return;
+        }
+        
+        if (!phone) {
+            e.preventDefault();
+            alert('Please enter a phone number for the contact.');
+            document.getElementById('phone_number').focus();
+            return;
+        }
+        
+        // Basic phone validation
+        const phoneDigits = phone.replace(/\D/g, '');
+        if (phoneDigits.length < 10) {
+            e.preventDefault();
+            alert('Please enter a valid phone number with at least 10 digits.');
+            document.getElementById('phone_number').focus();
+            return;
+        }
+    });
+
+    // Auto-capitalize names
+    const nameInput = document.getElementById('name');
+    nameInput.addEventListener('blur', function(e) {
+        const words = e.target.value.split(' ');
+        const capitalizedWords = words.map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        );
+        e.target.value = capitalizedWords.join(' ');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Analytics - ConnectYou Admin</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .analytics-card {
+            border: none;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+            border-radius: 10px;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+    </style>
+</head>
+<body class="bg-dark text-white">
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-download me-2 text-primary"></i>
+                    Download Analytics
+                </h1>
+                <p class="text-muted mb-0">Track app download clicks from different sources</p>
+                <small class="text-success" id="lastUpdated">Last updated: <span id="updateTime">Just now</span></small>
+            </div>
+            <div>
+                <button onclick="refreshData()" class="btn btn-success me-2">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh Data
+                </button>
+                <a href="{{ url_for('reports_dashboard') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="mb-4">
+            <a href="/" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-home me-2"></i>Home
+            </a>
+            <a href="/analytics" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-chart-bar me-2"></i>Analytics
+            </a>
+            <a href="/admin/providers" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-users-cog me-2"></i>Providers
+            </a>
+            <a href="/admin/waiting_list" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-clock me-2"></i>Waiting List
+            </a>
+            <a href="/reports" class="btn btn-outline-secondary">
+                <i class="fas fa-flag me-2"></i>Reports
+            </a>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <h3 class="mb-1">{{ total_downloads }}</h3>
+                    <p class="mb-0">Total Downloads</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #198754 0%, #157347 100%);">
+                    <h3 class="mb-1">{{ download_stats|selectattr('source', 'equalto', 'call')|map(attribute='count')|sum or 0 }}</h3>
+                    <p class="mb-0">From Call Buttons</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                    <h3 class="mb-1">{{ download_stats|selectattr('source', 'equalto', 'text')|map(attribute='count')|sum or 0 }}</h3>
+                    <p class="mb-0">From Text Buttons</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);">
+                    <h3 class="mb-1">{{ download_stats|selectattr('source', 'equalto', 'apple_app_store')|map(attribute='count')|sum or 0 }}</h3>
+                    <p class="mb-0">Apple App Store</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #6f42c1 0%, #5a36a3 100%);">
+                    <h3 class="mb-1">{{ download_stats|selectattr('source', 'equalto', 'google_play_store')|map(attribute='count')|sum or 0 }}</h3>
+                    <p class="mb-0">Google Play Store</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <!-- Source Distribution Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="analytics-card p-4">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-chart-pie me-2"></i>Download Sources
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="sourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Downloads Chart -->
+            <div class="col-md-6 mb-4">
+                <div class="analytics-card p-4">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-chart-line me-2"></i>Daily Downloads (Last 30 Days)
+                    </h5>
+                    <div class="chart-container">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Downloads Table -->
+        <div class="analytics-card p-4">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-clock me-2"></i>Recent Downloads (Last 100)
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>IP Address</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for download in recent_downloads %}
+                        <tr>
+                            <td>{{ download.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                {% if download.source == 'call' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-phone me-1"></i>Call Button
+                                    </span>
+                                {% elif download.source == 'text' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-sms me-1"></i>Text Button
+                                    </span>
+                                {% elif download.source == 'app_icon' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-mobile-alt me-1"></i>App Icon
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ download.user_ip or 'Unknown' }}</td>
+                            <td class="text-truncate" style="max-width: 200px;">{{ download.user_agent or 'Unknown' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No download data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update timestamp display
+        function updateTimestamp() {
+            document.getElementById('updateTime').textContent = new Date().toLocaleString();
+        }
+        
+        // Auto-refresh the page every 5 seconds to show live data
+        setInterval(function() {
+            location.reload();
+        }, 5000);
+        
+        // Add manual refresh button
+        function refreshData() {
+            updateTimestamp();
+            location.reload();
+        }
+        
+        // Set initial timestamp
+        updateTimestamp();
+        // Source Distribution Chart
+        const sourceData = {
+            labels: ['Call Buttons', 'Text Buttons', 'Apple App Store', 'Google Play Store'],
+            datasets: [{
+                data: [
+                    {{ download_stats|selectattr('source', 'equalto', 'call')|map(attribute='count')|sum or 0 }},
+                    {{ download_stats|selectattr('source', 'equalto', 'text')|map(attribute='count')|sum or 0 }},
+                    {{ download_stats|selectattr('source', 'equalto', 'apple_app_store')|map(attribute='count')|sum or 0 }},
+                    {{ download_stats|selectattr('source', 'equalto', 'google_play_store')|map(attribute='count')|sum or 0 }}
+                ],
+                backgroundColor: ['#198754', '#ffc107', '#dc3545', '#6f42c1'],
+                borderWidth: 0
+            }]
+        };
+
+        new Chart(document.getElementById('sourceChart'), {
+            type: 'doughnut',
+            data: sourceData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#ffffff',
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Daily Downloads Chart
+        const dailyData = {
+            labels: [
+                  {% for stat in daily_stats %}
+                    '{{ stat.date[5:7] }}/{{ stat.date[8:10] }}',
+                    {% endfor %}}
+            ],
+            datasets: [
+                {
+                    label: 'Call Buttons',
+                    data: [
+                        {% for stat in daily_stats %}
+                        {% if stat.source == 'call' %}{{ stat.count }}{% else %}0{% endif %},
+                        {% endfor %}
+                    ],
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Text Buttons',
+                    data: [
+                        {% for stat in daily_stats %}
+                        {% if stat.source == 'text' %}{{ stat.count }}{% else %}0{% endif %},
+                        {% endfor %}
+                    ],
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Apple App Store',
+                    data: [
+                        {% for stat in daily_stats %}
+                        {% if stat.source == 'apple_app_store' %}{{ stat.count }}{% else %}0{% endif %},
+                        {% endfor %}
+                    ],
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Google Play Store',
+                    data: [
+                        {% for stat in daily_stats %}
+                        {% if stat.source == 'google_play_store' %}{{ stat.count }}{% else %}0{% endif %},
+                        {% endfor %}
+                    ],
+                    borderColor: '#6f42c1',
+                    backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                    tension: 0.4
+                }
+            ]
+        };
+
+        new Chart(document.getElementById('dailyChart'), {
+            type: 'line',
+            data: dailyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#ffffff'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

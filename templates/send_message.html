@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Send Message - {{ contact_list.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 col-xl-6 mx-auto">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('contact_list', list_id=contact_list.id) }}">{{ contact_list.name }}</a></li>
+                <li class="breadcrumb-item active">Send Message</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sms me-2"></i>
+                    Send Group Message
+                </h4>
+                <p class="text-muted mb-0 mt-1">
+                    Sending to contacts in: <strong>{{ contact_list.name }}</strong>
+                </p>
+            </div>
+            <div class="card-body">
+                {% if contact_list.contacts %}
+                <form method="POST">
+                    <!-- Contact Selection -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-users me-1"></i>
+                            Select Recipients <span class="text-danger">*</span>
+                        </label>
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label fw-bold" for="selectAll">
+                                        Select All Contacts ({{ contact_list.contacts|length }})
+                                    </label>
+                                </div>
+                                <hr>
+                                {% for contact in contact_list.contacts %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input contact-checkbox" type="checkbox" 
+                                           name="contacts" value="{{ contact.id }}" id="contact{{ contact.id }}">
+                                    <label class="form-check-label" for="contact{{ contact.id }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ contact.name }}</strong>
+                                                {% if contact.position %}
+                                                <span class="badge bg-secondary small ms-2">{{ contact.position }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <span class="text-muted small font-monospace">{{ contact.formatted_phone() }}</span>
+                                        </div>
+                                        {% if contact.department %}
+                                        <small class="text-muted">{{ contact.department }}</small>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Select which contacts should receive the message. You can send to individuals or groups.
+                        </div>
+                    </div>
+
+                    <!-- Message Content -->
+                    <div class="mb-4">
+                        <label for="message" class="form-label">
+                            <i class="fas fa-comment me-1"></i>
+                            Message <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="message" name="message" rows="4" required
+                                  placeholder="Type your message here..." maxlength="1600"></textarea>
+                        <div class="d-flex justify-content-between">
+                            <div class="form-text">
+                                <i class="fas fa-mobile-alt me-1"></i>
+                                SMS messages are limited to 1600 characters
+                            </div>
+                            <small class="text-muted">
+                                <span id="charCount">0</span>/1600 characters
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Message Templates -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-template me-1"></i>
+                            Quick Templates
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 template-btn" 
+                                        data-template="Welcome to the team! Please complete your onboarding checklist at your earliest convenience. Let us know if you have any questions.">
+                                    <i class="fas fa-handshake me-1"></i>
+                                    Welcome/Onboarding
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 template-btn" 
+                                        data-template="Reminder: Training session scheduled for [DATE] at [TIME]. Please confirm your attendance and bring required materials.">
+                                    <i class="fas fa-graduation-cap me-1"></i>
+                                    Training Reminder
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 template-btn" 
+                                        data-template="Team meeting today at [TIME]. Please review the agenda beforehand and come prepared with your updates.">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Meeting Reminder
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100 template-btn" 
+                                        data-template="Please complete your timesheet by EOD. Contact HR if you need assistance or have questions about the process.">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Administrative
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-text">Click a template to insert pre-written message content. Edit as needed.</div>
+                    </div>
+
+                    <!-- Selected Recipients Summary -->
+                    <div class="mb-4">
+                        <div class="card bg-primary bg-opacity-10 border-primary">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    Message Summary
+                                </h6>
+                                <div id="recipientSummary" class="text-muted">
+                                    No recipients selected
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('contact_list', list_id=contact_list.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="sendButton" disabled>
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                    <h5>No Contacts Available</h5>
+                    <p class="text-muted">This contact list is empty. Add contacts first before sending messages.</p>
+                    <a href="{{ url_for('add_contact', list_id=contact_list.id) }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Add First Contact
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Message Cost Information -->
+        {% if contact_list.contacts %}
+        <div class="card mt-4 bg-dark border-secondary">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Messaging Information
+                </h6>
+                <ul class="mb-0 small text-muted">
+                    <li>Messages are sent via SMS using your Twilio account</li>
+                    <li>Standard SMS rates apply based on your Twilio plan</li>
+                    <li>Long messages may be split into multiple SMS parts</li>
+                    <li>Delivery confirmation will be shown after sending</li>
+                    <li>Recipients can reply directly to your Twilio number</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const contactCheckboxes = document.querySelectorAll('.contact-checkbox');
+    const messageTextarea = document.getElementById('message');
+    const charCount = document.getElementById('charCount');
+    const recipientSummary = document.getElementById('recipientSummary');
+    const sendButton = document.getElementById('sendButton');
+    const templateButtons = document.querySelectorAll('.template-btn');
+
+    // Select All functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            contactCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateRecipientSummary();
+        });
+    }
+
+    // Individual checkbox change
+    contactCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectAllCheckbox();
+            updateRecipientSummary();
+        });
+    });
+
+    // Character count
+    if (messageTextarea && charCount) {
+        messageTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            if (count > 1600) {
+                charCount.parentElement.classList.add('text-danger');
+            } else {
+                charCount.parentElement.classList.remove('text-danger');
+            }
+            
+            updateSendButton();
+        });
+    }
+
+    // Template buttons
+    templateButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const template = this.getAttribute('data-template');
+            if (messageTextarea) {
+                messageTextarea.value = template;
+                messageTextarea.dispatchEvent(new Event('input'));
+                messageTextarea.focus();
+            }
+        });
+    });
+
+    function updateSelectAllCheckbox() {
+        const checkedCount = document.querySelectorAll('.contact-checkbox:checked').length;
+        const totalCount = contactCheckboxes.length;
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedCount === totalCount;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        }
+    }
+
+    function updateRecipientSummary() {
+        const checkedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
+        const count = checkedCheckboxes.length;
+        
+        if (recipientSummary) {
+            if (count === 0) {
+                recipientSummary.innerHTML = '<span class="text-muted">No recipients selected</span>';
+            } else if (count === 1) {
+                const contactName = checkedCheckboxes[0].nextElementSibling.querySelector('strong').textContent;
+                recipientSummary.innerHTML = `<span class="text-primary">Sending to: <strong>${contactName}</strong></span>`;
+            } else {
+                recipientSummary.innerHTML = `<span class="text-primary">Sending to <strong>${count} contacts</strong></span>`;
+            }
+        }
+        
+        updateSendButton();
+    }
+
+    function updateSendButton() {
+        const hasRecipients = document.querySelectorAll('.contact-checkbox:checked').length > 0;
+        const hasMessage = messageTextarea && messageTextarea.value.trim().length > 0;
+        const messageNotTooLong = messageTextarea && messageTextarea.value.length <= 1600;
+        
+        if (sendButton) {
+            sendButton.disabled = !(hasRecipients && hasMessage && messageNotTooLong);
+        }
+    }
+
+    // Form submission confirmation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkedCount = document.querySelectorAll('.contact-checkbox:checked').length;
+            const message = messageTextarea.value.trim();
+            
+            if (checkedCount === 0) {
+                e.preventDefault();
+                alert('Please select at least one recipient.');
+                return;
+            }
+            
+            if (!message) {
+                e.preventDefault();
+                alert('Please enter a message to send.');
+                messageTextarea.focus();
+                return;
+            }
+            
+            if (message.length > 1600) {
+                e.preventDefault();
+                alert('Message is too long. Please keep it under 1600 characters.');
+                messageTextarea.focus();
+                return;
+            }
+            
+            // Confirmation dialog
+            const confirmMessage = `Send message to ${checkedCount} contact${checkedCount > 1 ? 's' : ''}?\n\nThis will use your Twilio SMS credits.`;
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Initialize
+    updateRecipientSummary();
+    updateSendButton();
+});
+</script>
+{% endblock %}
