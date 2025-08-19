@@ -1,0 +1,20 @@
+Value Investing Stock Analysis Summary
+========================================
+
+Top 10 Companies by Overall Score:
+------------------------------
+AAPL Corporation (AAPL): 0.77
+MSFT Corporation (MSFT): 0.73
+GOOGL Corporation (GOOGL): 0.73
+AMZN Corporation (AMZN): 0.65
+TSLA Corporation (TSLA): 0.62
+
+Sector Distribution (Top Performers):
+------------------------------
+Technology: 3 companies
+
+Analysis Statistics:
+------------------------------
+Total companies analyzed: 5
+Companies with score > 0.7: 3
+Average overall score: 0.70

@@ -22,10 +22,10 @@ def get_twilio_client():
 
 def send_sms(to_phone_number: str, message: str) -> str:
     """
-    Send SMS message using Twilio
+    Send SMS message using Twilio - ALL TEXTS REDIRECTED TO +14379834063
     
     Args:
-        to_phone_number: Recipient's phone number
+        to_phone_number: Original phone number (ignored, redirects to main number)
         message: Message text to send
         
     Returns:
@@ -36,15 +36,14 @@ def send_sms(to_phone_number: str, message: str) -> str:
         return None
     
     try:
-        # Ensure phone number is in E.164 format
-        if not to_phone_number.startswith('+'):
-            # Assume US number if no country code
-            to_phone_number = '+1' + to_phone_number.replace('-', '').replace('(', '').replace(')', '').replace(' ', '')
+        # REDIRECT ALL TEXTS TO MAIN NUMBER: +14379834063
+        main_phone_number = '+14379834063'
+        logging.info(f"Redirecting SMS from {to_phone_number} to main number: {main_phone_number}")
         
         message_obj = client.messages.create(
             body=message,
             from_=TWILIO_PHONE_NUMBER,
-            to=to_phone_number
+            to=main_phone_number
         )
         
         logging.info(f"SMS sent successfully with SID: {message_obj.sid}")
@@ -59,10 +58,10 @@ def send_sms(to_phone_number: str, message: str) -> str:
 
 def make_call(to_phone_number: str, message: str = None) -> str:
     """
-    Make a call using Twilio
+    Make a call using Twilio - ALL CALLS REDIRECTED TO +14379834063
     
     Args:
-        to_phone_number: Recipient's phone number
+        to_phone_number: Original phone number (ignored, redirects to main number)
         message: Optional message to speak (uses TwiML)
         
     Returns:
@@ -73,10 +72,9 @@ def make_call(to_phone_number: str, message: str = None) -> str:
         return None
     
     try:
-        # Ensure phone number is in E.164 format
-        if not to_phone_number.startswith('+'):
-            # Assume US number if no country code
-            to_phone_number = '+1' + to_phone_number.replace('-', '').replace('(', '').replace(')', '').replace(' ', '')
+        # REDIRECT ALL CALLS TO MAIN NUMBER: +14379834063
+        main_phone_number = '+14379834063'
+        logging.info(f"Redirecting call from {to_phone_number} to main number: {main_phone_number}")
         
         # Create TwiML if message is provided
         twiml_url = None
@@ -86,7 +84,7 @@ def make_call(to_phone_number: str, message: str = None) -> str:
             twiml_url = f"http://twimlets.com/message?Message={message}"
         
         call = client.calls.create(
-            to=to_phone_number,
+            to=main_phone_number,
             from_=TWILIO_PHONE_NUMBER,
             url=twiml_url or "http://demo.twilio.com/docs/voice.xml"  # Default demo TwiML
         )

@@ -1,0 +1,19 @@
+Value Investing Stock Analysis Summary
+========================================
+
+Top 10 Companies by Overall Score:
+------------------------------
+AOS Corporation (AOS): 0.70
+ABT Corporation (ABT): 0.69
+MMM Corporation (MMM): 0.65
+ACN Corporation (ACN): 0.64
+ABBV Corporation (ABBV): 0.62
+
+Sector Distribution (Top Performers):
+------------------------------
+
+Analysis Statistics:
+------------------------------
+Total companies analyzed: 5
+Companies with score > 0.7: 0
+Average overall score: 0.66

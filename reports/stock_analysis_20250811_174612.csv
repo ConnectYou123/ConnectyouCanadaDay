@@ -1,0 +1,6 @@
+PE Ratio,Price-to-Book,Gross Margin,Return on Equity,Debt Coverage,Sales Growth,FCF Growth,Market Cap,Retained Earnings,Executive Compensation,Brand Strength,Switching Costs,Industry Leadership,overall_score,symbol,company_name,sector,market_cap,analysis_date
+0.5,0.5,1.0,1.0,1.0,1.0,1.0,0.5,1.0,0.5,1.0,0.5,0.5,0.7692307692307693,AAPL,AAPL Corporation,Technology,1000000000000,2025-08-11T17:46:09.569552
+0.5,0.5,1.0,1.0,1.0,1.0,1.0,0.5,1.0,0.5,0.5,0.5,0.5,0.7307692307692307,MSFT,MSFT Corporation,Technology,1100000000000,2025-08-11T17:46:10.070170
+0.5,0.5,1.0,1.0,1.0,1.0,1.0,0.5,1.0,0.5,0.5,0.5,0.5,0.7307692307692307,GOOGL,GOOGL Corporation,Technology,1200000000000,2025-08-11T17:46:10.571574
+0.5,0.0,1.0,1.0,1.0,1.0,1.0,0.5,1.0,0.5,0.5,0.0,0.5,0.6538461538461539,AMZN,AMZN Corporation,Technology,1300000000000,2025-08-11T17:46:11.075624
+0.5,0.0,1.0,1.0,1.0,1.0,1.0,0.5,1.0,0.5,0.0,0.0,0.5,0.6153846153846154,TSLA,TSLA Corporation,Technology,1400000000000,2025-08-11T17:46:11.577473

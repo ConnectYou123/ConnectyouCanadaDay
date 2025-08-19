@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Value Investing Stock Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .progress {
+            height: 25px;
+        }
+        .score-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .criteria-score {
+            font-weight: bold;
+        }
+        .score-excellent { color: #28a745; }
+        .score-good { color: #ffc107; }
+        .score-poor { color: #dc3545; }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.6);
+            border-radius: 10px;
+            padding: 2rem;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.15s ease-in-out, border-color 0.15s;
+        }
+        .drop-zone.dragover {
+            background: rgba(255,255,255,0.1);
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-line me-2"></i>
+                Value Investing Stock Finder
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-circle text-success me-1"></i>
+                    <span id="status-indicator">Ready</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-search-dollar me-3"></i>
+                Find Your Next Value Investment
+            </h1>
+            <p class="lead mb-4">
+                Analyze thousands of stocks using proven value investing principles from Warren Buffett, 
+                Charlie Munger, Benjamin Graham, and other legendary investors.
+            </p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <input id="limitInput" type="number" class="form-control form-control-lg me-2" style="max-width: 180px;" placeholder="Companies (e.g., 50)" value="50" />
+                        <button id="startAnalysis" class="btn btn-light btn-lg px-4 me-md-2">
+                            <i class="fas fa-play me-2"></i>
+                            Start Analysis
+                        </button>
+                        <label class="btn btn-outline-light btn-lg px-4 mb-0">
+                            <i class="fas fa-file-upload me-2"></i>
+                            Upload Doc
+                            <input id="uploadInput" type="file" accept=".pdf,.docx,.txt" hidden />
+                        </label>
+                        <button id="stopAnalysis" class="btn btn-outline-light btn-lg px-4" style="display: none;">
+                            <i class="fas fa-stop me-2"></i>
+                            Stop Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <!-- Document Analyzer (Drag & Drop) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-dark text-light">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Document Analyzer (PDF / DOCX / TXT)</h5>
+                        <small class="text-muted">Drag & drop a file below, or use Upload Doc</small>
+                    </div>
+                    <div class="card-body">
+                        <div id="dropZone" class="drop-zone text-center">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                            <div>Drop your document here, or click to choose a file</div>
+                        </div>
+                        <input id="dropFileInput" type="file" accept=".pdf,.docx,.txt" hidden />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Progress Section -->
+        <div id="progressSection" class="row mb-4" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-tasks me-2"></i>
+                            Analysis Progress
+                        </h5>
+                        <div class="progress mb-3">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Progress: <span id="progressText">0%</span></small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">Analyzing: <span id="currentCompany">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="row" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Analysis Results
+                            <span class="badge bg-primary ms-2" id="resultsCount">0</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Symbol</th>
+                                        <th>Company</th>
+                                        <th>Sector</th>
+                                        <th>Market Cap</th>
+                                        <th>Overall Score</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Details Modal -->
+        <div class="modal fade" id="companyModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="companyModalTitle">Company Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="companyModalBody">
+                        <div class="loading-spinner text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reportsSection" class="row mt-4" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-download me-2"></i>
+                            Generated Reports
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="reportsList" class="list-group">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="fas fa-chart-line me-2"></i>
+                Value Investing Stock Finder - Powered by proven investment principles
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let statusInterval;
+        let resultsInterval;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkHealth();
+            loadReports();
+        });
+
+        // Health check
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    document.getElementById('status-indicator').textContent = 'Connected';
+                }
+            } catch (error) {
+                console.error('Health check failed:', error);
+                document.getElementById('status-indicator').textContent = 'Disconnected';
+            }
+        }
+
+        // Start analysis
+        document.getElementById('startAnalysis').addEventListener('click', async function() {
+            try {
+                const limitVal = parseInt(document.getElementById('limitInput').value || '0', 10);
+                const payload = isNaN(limitVal) || limitVal <= 0 ? {} : { limit: limitVal };
+                const response = await fetch('/api/start-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    this.style.display = 'none';
+                    document.getElementById('stopAnalysis').style.display = 'inline-block';
+                    document.getElementById('progressSection').style.display = 'block';
+                    
+                    // Start monitoring progress
+                    startProgressMonitoring();
+                } else {
+                    const data = await response.json();
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error starting analysis:', error);
+                alert('Failed to start analysis');
+            }
+        });
+
+        // Upload document
+        async function uploadDocFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/upload-doc', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+            const modal = new bootstrap.Modal(document.getElementById('companyModal'));
+            const modalTitle = document.getElementById('companyModalTitle');
+            const modalBody = document.getElementById('companyModalBody');
+            modalTitle.textContent = `${data.evaluation.symbol} - Uploaded Document`;
+            modalBody.innerHTML = createCompanyDetailsHTML({ data: data.evaluation, evaluation: data.evaluation });
+            modal.show();
+        }
+
+        const uploadBtnInput = document.getElementById('uploadInput');
+        if (uploadBtnInput) {
+            uploadBtnInput.addEventListener('change', async function(evt) {
+                const file = evt.target.files[0];
+                if (!file) return;
+                try { await uploadDocFile(file); } catch (e) { alert(e.message); }
+                finally { evt.target.value=''; }
+            });
+        }
+
+        // Drag & Drop zone
+        const dropZone = document.getElementById('dropZone');
+        const dropInput = document.getElementById('dropFileInput');
+        dropZone.addEventListener('click', () => dropInput.click());
+        dropInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try { await uploadDocFile(file); } catch (err) { alert(err.message); }
+            finally { e.target.value=''; }
+        });
+        ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, (e)=>{e.preventDefault(); dropZone.classList.add('dragover');}));
+        ['dragleave','drop'].forEach(evt => dropZone.addEventListener(evt, (e)=>{e.preventDefault(); dropZone.classList.remove('dragover');}));
+        dropZone.addEventListener('drop', async (e) => {
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            try { await uploadDocFile(file); } catch (err) { alert(err.message); }
+        });
+
+        // Stop analysis
+        document.getElementById('stopAnalysis').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/stop-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    this.style.display = 'none';
+                    document.getElementById('startAnalysis').style.display = 'inline-block';
+                    stopProgressMonitoring();
+                }
+            } catch (error) {
+                console.error('Error stopping analysis:', error);
+            }
+        });
+
+        // Monitor progress
+        function startProgressMonitoring() {
+            statusInterval = setInterval(updateStatus, 1000);
+        }
+
+        function stopProgressMonitoring() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+        }
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                // Update progress
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                const currentCompany = document.getElementById('currentCompany');
+                
+                progressBar.style.width = status.progress + '%';
+                progressText.textContent = status.progress + '%';
+                currentCompany.textContent = status.current_company || '-';
+                
+                // Check if analysis is complete
+                if (!status.running && status.progress >= 100) {
+                    stopProgressMonitoring();
+                    document.getElementById('stopAnalysis').style.display = 'none';
+                    document.getElementById('startAnalysis').style.display = 'inline-block';
+                    
+                    if (status.results && status.results.length > 0) {
+                        displayResults(status.results);
+                        loadReports();
+                    } else if (status.error) {
+                        alert('Analysis error: ' + status.error);
+                    } else {
+                        alert('Analysis completed but no results found. This might be due to API rate limits or missing data.');
+                    }
+                }
+                
+                // Handle errors
+                if (status.error) {
+                    alert('Analysis error: ' + status.error);
+                    stopProgressMonitoring();
+                    document.getElementById('stopAnalysis').style.display = 'none';
+                    document.getElementById('startAnalysis').style.display = 'inline-block';
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        // Display results
+        function displayResults(results) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsTable = document.getElementById('resultsTable');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            resultsSection.style.display = 'block';
+            resultsCount.textContent = results.length;
+            
+            resultsTable.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                const score = result.overall_score || 0;
+                const scoreClass = score >= 0.7 ? 'score-excellent' : score >= 0.5 ? 'score-good' : 'score-poor';
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong>${result.symbol}</strong></td>
+                    <td>${result.company_name || 'N/A'}</td>
+                    <td>${result.sector || 'N/A'}</td>
+                    <td>${formatMarketCap(result.market_cap)}</td>
+                    <td>
+                        <span class="badge score-badge ${scoreClass}">
+                            ${(score * 100).toFixed(1)}%
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showCompanyDetails('${result.symbol}')">
+                            <i class="fas fa-eye"></i> Details
+                        </button>
+                    </td>
+                `;
+                
+                resultsTable.appendChild(row);
+            });
+        }
+
+        // Show company details
+        async function showCompanyDetails(symbol) {
+            const modal = new bootstrap.Modal(document.getElementById('companyModal'));
+            const modalTitle = document.getElementById('companyModalTitle');
+            const modalBody = document.getElementById('companyModalBody');
+            
+            modalTitle.textContent = `${symbol} - Company Details`;
+            modalBody.innerHTML = '<div class="loading-spinner text-center"><div class="spinner-border"></div></div>';
+            modal.show();
+            
+            try {
+                const response = await fetch(`/api/company/${symbol}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    modalBody.innerHTML = createCompanyDetailsHTML(data);
+                } else {
+                    modalBody.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                }
+            } catch (error) {
+                modalBody.innerHTML = '<div class="alert alert-danger">Failed to load company details</div>';
+            }
+        }
+
+        // Create company details HTML
+        function createCompanyDetailsHTML(data) {
+            const company = data.data;
+            const evaluation = data.evaluation;
+            
+            // Define all 30 value investing criteria with descriptions
+            const criteriaDefinitions = {
+                // Buffett & Munger Core Philosophy
+                'Business Understanding': {
+                    description: 'Can you understand the business?',
+                    source: 'Charlie Munger',
+                    threshold: 'Clear business model (excellent)',
+                    current: 'Based on sector and metrics'
+                },
+                '20-Year Success': {
+                    description: 'Will this company be successful 20 years from now?',
+                    source: 'Warren Buffett',
+                    threshold: 'Strong moat + financial health (excellent)',
+                    current: 'Based on brand, market position, debt'
+                },
+                'Economic Necessity': {
+                    description: 'If this company dies tomorrow, would anyone care?',
+                    source: 'Value Investing',
+                    threshold: 'Essential service + market position (excellent)',
+                    current: 'Based on sector importance and market share'
+                },
+                'Competitive Moat': {
+                    description: 'Does this company have a competitive edge (moat)?',
+                    source: 'Warren Buffett',
+                    threshold: 'Multiple moat indicators (excellent)',
+                    current: 'Based on brand, switching costs, market share, margins'
+                },
+                'Management Trust': {
+                    description: 'Can you trust the management?',
+                    source: 'Charlie Munger',
+                    threshold: 'Reasonable compensation + transparency (excellent)',
+                    current: company.executive_compensation ? formatCurrency(company.executive_compensation) : 'N/A'
+                },
+                
+                // Graham Value Principles
+                'Margin of Safety': {
+                    description: 'Is there a margin of safety?',
+                    source: 'Benjamin Graham',
+                    threshold: 'P/E ≤ 15 & P/B ≤ 1.5 (excellent)',
+                    current: `P/E: ${company.pe_ratio ? company.pe_ratio.toFixed(2) : 'N/A'}, P/B: ${company.price_to_book ? company.price_to_book.toFixed(2) : 'N/A'}`
+                },
+                'PE Ratio': {
+                    description: 'P/E ratio should be reasonable (under 15-30)',
+                    source: 'Benjamin Graham',
+                    threshold: '≤ 15 (excellent), ≤ 30 (good)',
+                    current: company.pe_ratio ? company.pe_ratio.toFixed(2) : 'N/A'
+                },
+                'Price-to-Book': {
+                    description: 'P/B ratio should be under 3 (Graham\'s principle)',
+                    source: 'Benjamin Graham',
+                    threshold: '≤ 1.5 (excellent), ≤ 3 (good)',
+                    current: company.price_to_book ? company.price_to_book.toFixed(2) : 'N/A'
+                },
+                
+                // Business Quality Assessment
+                'Gross Margin': {
+                    description: 'Gross margin should be >40%',
+                    source: 'Business Quality Assessment',
+                    threshold: '≥ 40% (excellent), ≥ 30% (good)',
+                    current: company.gross_margin ? company.gross_margin.toFixed(1) + '%' : 'N/A'
+                },
+                'Return on Equity': {
+                    description: 'ROE should be >30%',
+                    source: 'Warren Buffett',
+                    threshold: '≥ 30% (excellent), ≥ 20% (good)',
+                    current: company.roe ? company.roe.toFixed(1) + '%' : 'N/A'
+                },
+                'Debt Coverage': {
+                    description: '3 years FCF should cover long-term debt',
+                    source: 'Phil Town\'s Rule #1',
+                    threshold: '≥ 1.0x coverage (excellent), ≥ 0.5x (good)',
+                    current: company.fcf_3year_sum && company.long_term_debt ? 
+                        (company.fcf_3year_sum / company.long_term_debt).toFixed(2) + 'x' : 'N/A'
+                },
+                'FCF Growth': {
+                    description: 'Free Cash Flow should be positive and growing',
+                    source: 'Warren Buffett',
+                    threshold: '> 0% (excellent)',
+                    current: company.fcf_growth ? company.fcf_growth.toFixed(1) + '%' : 'N/A'
+                },
+                
+                // Growth and Competitive Position
+                '10X Growth Potential': {
+                    description: 'Can this company grow 10X?',
+                    source: 'Growth Assessment',
+                    threshold: 'Room to grow + high growth sector (excellent)',
+                    current: 'Based on market share and sector'
+                },
+                'Global Potential': {
+                    description: 'Can this company go global?',
+                    source: 'Growth Assessment',
+                    threshold: 'Strong brand + global sector (excellent)',
+                    current: 'Based on brand strength and sector'
+                },
+                'Sales Growth': {
+                    description: 'Sales should grow 15%+ year-over-year',
+                    source: 'Growth Assessment',
+                    threshold: '≥ 15% (excellent), ≥ 10% (good)',
+                    current: company.sales_growth ? company.sales_growth.toFixed(1) + '%' : 'N/A'
+                },
+                'Industry Leadership': {
+                    description: 'Company should be leader in their industry',
+                    source: 'Market Dominance',
+                    threshold: '≥ 30% market share (excellent), ≥ 15% (good)',
+                    current: company.market_share ? company.market_share.toFixed(1) + '%' : 'N/A'
+                },
+                
+                // Neff's Low P/E Strategy
+                'Relative Performance': {
+                    description: 'Does it offer superior returns vs competitors?',
+                    source: 'John Neff',
+                    threshold: 'ROE ≥ 25% + growth ≥ 15% (excellent)',
+                    current: `ROE: ${company.roe ? company.roe.toFixed(1) + '%' : 'N/A'}, Growth: ${company.sales_growth ? company.sales_growth.toFixed(1) + '%' : 'N/A'}`
+                },
+                
+                // Li Lu's Approach
+                'Business Model Clarity': {
+                    description: 'How does the company make money?',
+                    source: 'Li Lu',
+                    threshold: 'Clear pricing power + market position (excellent)',
+                    current: 'Based on gross margin and market share'
+                },
+                'Competitive Analysis': {
+                    description: 'How does it compare to competition?',
+                    source: 'Li Lu',
+                    threshold: 'Market leader + strong brand (excellent)',
+                    current: 'Based on market share and brand strength'
+                },
+                'Risk Assessment': {
+                    description: 'How can we lose our capital?',
+                    source: 'Li Lu',
+                    threshold: 'Low debt + large cap + stable sector (excellent)',
+                    current: 'Based on debt coverage and sector stability'
+                },
+                
+                // Mayer's 100 Baggers
+                'Relative Growth': {
+                    description: 'Sales growing faster than industry/S&P 500?',
+                    source: 'Christopher Mayer',
+                    threshold: '≥ 20% growth + market position (excellent)',
+                    current: company.sales_growth ? company.sales_growth.toFixed(1) + '%' : 'N/A'
+                },
+                'Earnings Quality': {
+                    description: 'Earnings rising because book value rising?',
+                    source: 'Christopher Mayer',
+                    threshold: 'ROE ≥ 20% + low debt + retained earnings (excellent)',
+                    current: 'Based on ROE, debt coverage, and retained earnings'
+                },
+                
+                // Management and Governance
+                'Executive Compensation': {
+                    description: 'Executive compensation should be reasonable',
+                    source: 'Kenneth Jeffrey Marshall',
+                    threshold: '≤ $30M or ≤ 5% of FCF (excellent)',
+                    current: company.executive_compensation ? formatCurrency(company.executive_compensation) : 'N/A'
+                },
+                'Capital Allocation': {
+                    description: 'Management knows how to allocate capital?',
+                    source: 'Management Assessment',
+                    threshold: 'ROE ≥ 20% + good debt management (excellent)',
+                    current: 'Based on ROE and debt coverage'
+                },
+                'Retained Earnings': {
+                    description: 'Retained earnings should be positive',
+                    source: 'Financial Strength',
+                    threshold: '> 0 (excellent)',
+                    current: company.retained_earnings ? formatCurrency(company.retained_earnings) : 'N/A'
+                },
+                
+                // Moat Identification
+                'Switching Costs': {
+                    description: 'High customer switching costs indicate moat',
+                    source: 'Warren Buffett',
+                    threshold: '≥ 8/10 (excellent), ≥ 5/10 (good)',
+                    current: company.switching_costs ? company.switching_costs + '/10' : 'N/A'
+                },
+                'Brand Strength': {
+                    description: 'Company should have strong brand recognition',
+                    source: 'Moat Identification',
+                    threshold: '≥ 8/10 (excellent), ≥ 5/10 (good)',
+                    current: company.brand_strength ? company.brand_strength + '/10' : 'N/A'
+                },
+                'Customer Dependency': {
+                    description: 'Company ingrained in customers\' lives?',
+                    source: 'Moat Identification',
+                    threshold: 'Strong brand + high switching costs (excellent)',
+                    current: 'Based on brand strength and switching costs'
+                },
+                
+                // Risk Management
+                'Scenario Planning': {
+                    description: 'What can go wrong? (Munger\'s inversion)',
+                    source: 'Charlie Munger',
+                    threshold: 'Low debt + large cap + stable sector (excellent)',
+                    current: 'Based on debt coverage and sector stability'
+                },
+                
+                // Additional Metrics
+                'Market Cap': {
+                    description: 'Market capitalization should be >$100M',
+                    source: 'Size Assessment',
+                    threshold: '≥ $1B (excellent), ≥ $100M (good)',
+                    current: formatMarketCap(company.market_cap)
+                }
+            };
+            
+            let criteriaHTML = '';
+            Object.entries(evaluation).forEach(([key, value]) => {
+                if (key !== 'overall_score' && key !== 'symbol') {
+                    const score = value || 0;
+                    const scoreClass = score >= 0.7 ? 'score-excellent' : score >= 0.5 ? 'score-good' : 'score-poor';
+                    const scoreText = score >= 0.7 ? 'Excellent' : score >= 0.5 ? 'Good' : 'Poor';
+                    const criteria = criteriaDefinitions[key] || {};
+                    
+                    criteriaHTML += `
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="card-title">${key}</h6>
+                                            <p class="card-text small text-muted">${criteria.description || ''}</p>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <small><strong>Source:</strong> ${criteria.source || 'N/A'}</small>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <small><strong>Threshold:</strong> ${criteria.threshold || 'N/A'}</small>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <small><strong>Current Value:</strong> ${criteria.current || 'N/A'}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="badge score-badge ${scoreClass} mb-2">
+                                                    ${(score * 100).toFixed(1)}%
+                                                </span>
+                                                <small class="text-muted">${scoreText}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            return `
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-building me-2"></i>Company Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Name:</strong> ${company.company_name || 'N/A'}</p>
+                                <p><strong>Sector:</strong> ${company.sector || 'N/A'}</p>
+                                <p><strong>Market Cap:</strong> ${formatMarketCap(company.market_cap)}</p>
+                                <p><strong>P/E Ratio:</strong> ${company.pe_ratio ? company.pe_ratio.toFixed(2) : 'N/A'}</p>
+                                <p><strong>Price-to-Book:</strong> ${company.price_to_book ? company.price_to_book.toFixed(2) : 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Financial Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Gross Margin:</strong> ${company.gross_margin ? company.gross_margin.toFixed(1) + '%' : 'N/A'}</p>
+                                <p><strong>ROE:</strong> ${company.roe ? company.roe.toFixed(1) + '%' : 'N/A'}</p>
+                                <p><strong>Sales Growth:</strong> ${company.sales_growth ? company.sales_growth.toFixed(1) + '%' : 'N/A'}</p>
+                                <p><strong>FCF 3-Year Sum:</strong> ${formatCurrency(company.fcf_3year_sum)}</p>
+                                <p><strong>Long Term Debt:</strong> ${formatCurrency(company.long_term_debt)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-list-check me-2"></i>
+                                    Value Investing Criteria Analysis (${Object.keys(evaluation).filter(k => k !== 'overall_score' && k !== 'symbol').length} Criteria)
+                                </h6>
+                                <small class="text-muted">Based on principles from Warren Buffett, Charlie Munger, Benjamin Graham, and other legendary investors</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    ${criteriaHTML}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Overall Assessment</h6>
+                            <p class="mb-0">
+                                <strong>Overall Score:</strong> 
+                                <span class="badge score-badge ${evaluation.overall_score >= 0.7 ? 'score-excellent' : evaluation.overall_score >= 0.5 ? 'score-good' : 'score-poor'}">
+                                    ${(evaluation.overall_score * 100).toFixed(1)}%
+                                </span>
+                            </p>
+                            <small class="text-muted">
+                                This score represents how well the company meets the value investing criteria. 
+                                Higher scores indicate stronger alignment with proven investment principles.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load reports
+        async function loadReports() {
+            try {
+                const response = await fetch('/api/reports');
+                const data = await response.json();
+                
+                const reportsSection = document.getElementById('reportsSection');
+                const reportsList = document.getElementById('reportsList');
+                
+                if (data.reports.length > 0) {
+                    reportsSection.style.display = 'block';
+                    reportsList.innerHTML = '';
+                    
+                    data.reports.forEach(report => {
+                        const item = document.createElement('a');
+                        item.href = `/api/reports/${report.name}`;
+                        item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                        item.innerHTML = `
+                            <div>
+                                <i class="fas fa-file-csv me-2"></i>
+                                ${report.name}
+                                <small class="text-muted ms-2">${formatFileSize(report.size)}</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">
+                                <i class="fas fa-download"></i>
+                            </span>
+                        `;
+                        reportsList.appendChild(item);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading reports:', error);
+            }
+        }
+
+        // Utility functions
+        function formatMarketCap(marketCap) {
+            if (!marketCap) return 'N/A';
+            if (marketCap >= 1e12) return `$${(marketCap / 1e12).toFixed(1)}T`;
+            if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(1)}B`;
+            if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(1)}M`;
+            return `$${marketCap.toLocaleString()}`;
+        }
+
+        function formatCurrency(amount) {
+            if (!amount) return 'N/A';
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

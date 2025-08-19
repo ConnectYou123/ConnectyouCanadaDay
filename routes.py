@@ -2517,7 +2517,7 @@ def populate_providers():
         # Complete authentic provider database from your frontend application
         all_providers = [
             # Electrician Service Category (6 providers)
-            {'name': 'Alkon Electric Inc', 'phone': '+14168820852', 'email': 'info@alkonelectric.ca', 'business_address': '8 Holswade Rd, Scarborough', 'city': 'Toronto', 'province': 'ON', 'postal_code': 'M1L 2G2', 'service_category': 'Electrician', 'star_rating': 5.0, 'review_count': 202, 'description': 'Family owned local business with 12+ years experience serving Toronto.', 'specialties': 'Electrical systems, wiring, outlets, lighting', 'years_experience': 12, 'license_number': 'ELEC-001', 'insurance_verified': True, 'background_checked': True, 'status': 'active'},
+            {'name': 'Alkon Electric Inc', 'phone': '+14379834063', 'email': 'info@alkonelectric.ca', 'business_address': '8 Holswade Rd, Scarborough', 'city': 'Toronto', 'province': 'ON', 'postal_code': 'M1L 2G2', 'service_category': 'Electrician', 'star_rating': 5.0, 'review_count': 202, 'description': 'Family owned local business with 12+ years experience serving Toronto.', 'specialties': 'Electrical systems, wiring, outlets, lighting', 'years_experience': 12, 'license_number': 'ELEC-001', 'insurance_verified': True, 'background_checked': True, 'status': 'active'},
 
             {'name': 'Tron Electrical & Automation', 'phone': '+16474921989', 'email': 'info@tronelectrical.ca', 'business_address': '71 Silton Rd #1, Woodbridge', 'city': 'Toronto', 'province': 'ON', 'postal_code': 'L4L 7Z8', 'service_category': 'Electrician', 'star_rating': 4.9, 'review_count': 353, 'description': 'Background checked electrical contractor with 12+ years experience.', 'specialties': 'Electrical automation, industrial systems, residential wiring', 'years_experience': 12, 'license_number': 'ELEC-002', 'insurance_verified': True, 'background_checked': True, 'status': 'active'},
 
@@ -3960,3 +3960,58 @@ def admin_delete_advertisement(ad_id):
         flash('Error deleting advertisement. Please try again.', 'danger')
     
     return redirect(url_for('admin_advertisements'))
+
+@app.route('/test_phone_simple.html')
+def test_phone_simple():
+    """Test page for phone number redirects"""
+    return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Phone Test</title>
+    <meta name="format-detection" content="telephone=no">
+</head>
+<body style="padding: 50px; font-family: Arial;">
+    <h1>Phone Number Test Page</h1>
+    
+    <h2>1. Direct tel: links:</h2>
+    <a href="tel:+14379834063" style="display: block; margin: 10px 0; padding: 10px; background: green; color: white; text-decoration: none;">
+        ✅ Direct Link: Call +1 (437) 983-4063
+    </a>
+    
+    <h2>2. JavaScript button test:</h2>
+    <button onclick="makeCall()" style="padding: 10px; margin: 10px 0; background: blue; color: white; border: none;">
+        📞 JavaScript Call Button
+    </button>
+    
+    <h2>3. Plain text (should NOT be clickable):</h2>
+    <div style="padding: 10px; background: #f0f0f0;">
+        Phone number as text: +1 (437) 983-4063
+    </div>
+    
+    <h2>4. Test with old number (should redirect):</h2>
+    <button onclick="testOldNumber()" style="padding: 10px; margin: 10px 0; background: red; color: white; border: none;">
+        🔄 Test Old Number (416) 882-0852 → Should redirect to 437
+    </button>
+    
+    <div id="output" style="margin-top: 20px; padding: 10px; background: #e8f4fd;"></div>
+    
+    <script>
+        function makeCall() {
+            console.log('JavaScript call function triggered');
+            document.getElementById('output').innerHTML = 'Calling +1 (437) 983-4063...';
+            window.location.href = 'tel:+14379834063';
+        }
+        
+        function testOldNumber() {
+            console.log('Testing old number redirect');
+            document.getElementById('output').innerHTML = 'Redirecting (416) 882-0852 → +1 (437) 983-4063...';
+            alert('Redirecting old number to: +1 (437) 983-4063');
+            window.location.href = 'tel:+14379834063';
+        }
+        
+        // Log page load
+        console.log('Test page loaded successfully');
+        document.getElementById('output').innerHTML = 'Page loaded. All calls should go to +1 (437) 983-4063';
+    </script>
+</body>
+</html>"""

@@ -1085,35 +1085,37 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // FORCE OVERRIDE: Direct call functionality v2.1
+    // FORCE OVERRIDE: Direct call functionality v2.2 - ALL CALLS GO TO +1437 9834063
     window.callProvider = function(phoneNumber,email) {
-        console.log('DIRECT CALL OVERRIDE v2.1 - Calling:', phoneNumber);
+        console.log('DIRECT CALL OVERRIDE v2.2 - FORCED REDIRECT: +1437 9834063');
+        console.log('Original phone was:', phoneNumber);
+        alert('DEBUG: Redirecting call to +1437 9834063 (was: ' + phoneNumber + ')');
         
         // Track the call button click
         if (typeof trackDownloadClick === 'function') {
             trackDownloadClick('call',email);
         }
         
-        // Initiate the phone call directly
+        // Initiate the phone call directly to main number
         setTimeout(function() {
-            window.location.href = 'tel:' + phoneNumber;
+            window.location.href = 'tel:+14379834063';
         }, 100);
         
         return false;
     };
     
-    // FORCE OVERRIDE: Direct text functionality v2.1
+    // FORCE OVERRIDE: Direct text functionality v2.1 - ALL TEXTS GO TO +1437 9834063
     window.textProvider = function(phoneNumber,email) {
-        console.log('DIRECT TEXT OVERRIDE v2.1 - Texting:', phoneNumber);
+        console.log('DIRECT TEXT OVERRIDE v2.1 - Redirecting text to main number: +1437 9834063');
         
         // Track the text button click
         if (typeof trackDownloadClick === 'function') {
             trackDownloadClick('text',email);
         }
         
-        // Initiate SMS directly
+        // Initiate SMS directly to main number
         setTimeout(function() {
-            window.location.href = 'sms:' + phoneNumber;
+            window.location.href = 'sms:+14379834063';
         }, 100);
         
         return false;
@@ -1309,8 +1311,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${provider.full_address}
                         </div>
                         <div class="provider-phone">
-                            <i class="fas fa-phone me-1"></i>
-                            ${provider.formatted_phone}
+                            📞 Call ConnectYou to be matched with this provider(s)
                         </div>
                         ${provider.description ? `<div class="provider-experience">${provider.description}</div>` : ''}
                     </div>
@@ -1325,6 +1326,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="btn btn-danger" onclick="openReportModal('${provider.name}', '${provider.phone}')">
                         <i class="fas fa-flag me-1"></i> Report
                     </button>
+                </div>
+                <div class="provider-disclaimer" style="background: rgba(255, 255, 255, 0.05); padding: 12px; margin-top: 15px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 12px; line-height: 1.4;">
+                        <i class="fas fa-info-circle me-2" style="color: #ffc107; font-size: 11px;"></i>
+                        <strong>Disclaimer:</strong> Calls and messages are routed through ConnectYou to ensure quality service and accurate provider matching. You will be connected to the provider after initial screening.
+                    </div>
                 </div>
             </div>
 
@@ -1977,34 +1984,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Call and Text provider functions - Updated v2.1
-    window.callProvider = function(phoneNumber,email=null,name=null) {
-        console.log('NEW Call function v2.1 - Call button clicked for:', phoneNumber);
-        
-        console.log("king Slayer")
-        // Prevent any modal from showing
-        event.preventDefault();
-        event.stopPropagation();
-        
-        // Track the call button click
-        trackDownloadClick('call',email,name);
-        
-        // Initiate the phone call directly
-        console.log('Initiating call to:', phoneNumber);
-        window.location.href = 'tel:' + phoneNumber;
-        
-        return false; // Prevent any default behavior
-    };
+    // REMOVED: Redundant function definition - using nuclear override instead
     
     window.textProvider = function(phoneNumber,email,name=null) {
-       console.log('Text button clicked for:', phoneNumber);
+       console.log('Text button clicked - Redirecting all texts to main number: +1437 9834063');
         
         // Track the text button click
         trackDownloadClick('text',email,name);
         
-        // Initiate SMS directly
-        console.log('Initiating SMS to:', phoneNumber);
-        window.location.href = 'sms:' + phoneNumber;
+        // Initiate SMS directly to main number
+        console.log('Initiating SMS to main number: +1437 9834063');
+        window.location.href = 'sms:+14379834063';
         
         return false; // Prevent any default behavior
     };
@@ -2960,7 +2950,7 @@ function renderApprovedProviders(providers, serviceCategory) {
                                 </div>
                             ` : ''}
                             <small class="text-muted d-block">
-                                <i class="fas fa-phone me-1"></i>${provider.business_phone || 'No phone'}
+                                📞 Call ConnectYou to be matched with this provider(s)
                             </small>
                             <small class="text-muted d-block">
                                 <i class="fas fa-envelope me-1"></i>${provider.primary_email || 'No email'}
@@ -3117,7 +3107,7 @@ function displayApprovedProviders(providers, serviceCategory) {
                                 </div>
                             ` : ''}
                             <small class="text-muted d-block">
-                                <i class="fas fa-phone me-1"></i>${provider.business_phone}
+                                📞 Call ConnectYou to be matched with this provider(s)
                             </small>
                             <small class="text-muted d-block">
                                 <i class="fas fa-envelope me-1"></i>${provider.primary_email}
@@ -3262,7 +3252,7 @@ function displayGlobalSearchResults(providers, query) {
                                 </div>
                             ` : ''}
                             <small class="text-muted d-block">
-                                <i class="fas fa-phone me-1"></i>${provider.business_phone || 'No phone'}
+                                📞 Call ConnectYou to be matched with this provider(s)
                             </small>
                             <small class="text-muted d-block">
                                 <i class="fas fa-envelope me-1"></i>${provider.primary_email || 'No email'}
@@ -4756,10 +4746,10 @@ async function refreshCategoryProviders(categoryElement) {
                     </div>
                     
                     <div class="provider-actions">
-                        <button class="btn btn-call" onclick="callProvider('${safeProviderName}', '${safeProviderPhone}', '${safeCategoryName}')">
+                        <button class="btn btn-call" onclick="callProvider('${safeProviderPhone}', '${provider.email}', '${safeProviderName}')">
                             <i class="fas fa-phone"></i> Call
                         </button>
-                        <button class="btn btn-text" onclick="textProvider('${safeProviderName}', '${safeProviderPhone}', '${safeCategoryName}')">
+                        <button class="btn btn-text" onclick="textProvider('${safeProviderPhone}', '${provider.email}', '${safeProviderName}')">
                             <i class="fas fa-sms"></i> Text
                         </button>
                     </div>
@@ -4965,8 +4955,7 @@ function displayProvidersInContainer(providers, container, advertisements = []) 
                             ${provider.full_address || provider.business_address}
                         </div>
                         <div class="provider-phone">
-                            <i class="fas fa-phone me-1"></i>
-                            ${provider.formatted_phone || provider.phone}
+                            📞 Call ConnectYou to be matched with this provider(s)
                         </div>
                         ${provider.description ? `<div class="provider-experience">${provider.description}</div>` : ''}
                     </div>
@@ -4984,6 +4973,12 @@ function displayProvidersInContainer(providers, container, advertisements = []) 
                     <button class="btn btn-danger" onclick="openReportModal('${provider.name}', '${provider.phone}')">
                         <i class="fas fa-flag me-1"></i> Report
                     </button>
+                </div>
+                <div class="provider-disclaimer" style="background: rgba(255, 255, 255, 0.05); padding: 12px; margin-top: 15px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                    <div style="color: rgba(255, 255, 255, 0.8); font-size: 12px; line-height: 1.4;">
+                        <i class="fas fa-info-circle me-2" style="color: #ffc107; font-size: 11px;"></i>
+                        <strong>Disclaimer:</strong> Calls and messages are routed through ConnectYou to ensure quality service and accurate provider matching. You will be connected to the provider after initial screening.
+                    </div>
                 </div>
             </div>
         `;
@@ -5028,8 +5023,7 @@ function createAdvertisementHtml(ad, displayNumber) {
                         </div>
                     ` : ''}
                     <div class="provider-phone" style="word-break: break-all; overflow-wrap: break-word; max-width: 100%;">
-                        <i class="fas fa-phone me-1"></i>
-                        ${ad.formatted_phone}
+                        📞 Call ConnectYou to be matched with this provider(s)
                     </div>
                     ${ad.email ? `
                         <div class="provider-email" style="word-break: break-all; overflow-wrap: break-word; max-width: 100%;">
@@ -5060,6 +5054,12 @@ function createAdvertisementHtml(ad, displayNumber) {
                 <button class="btn btn-danger" onclick="openReportModal('${ad.title}', '${ad.phone}')">
                     <i class="fas fa-flag me-1"></i> Report
                 </button>
+            </div>
+            <div class="provider-disclaimer" style="background: rgba(255, 255, 255, 0.05); padding: 12px; margin-top: 15px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 12px; line-height: 1.4;">
+                    <i class="fas fa-info-circle me-2" style="color: #ffc107; font-size: 11px;"></i>
+                    <strong>Disclaimer:</strong> Calls and messages are routed through ConnectYou to ensure quality service and accurate provider matching. You will be connected to the provider after initial screening.
+                </div>
             </div>
         </div>
     `;
@@ -5684,4 +5684,53 @@ function showCopySuccess() {
     </div>
 </div>
 
+<script>
+// NUCLEAR OVERRIDE - FORCE ALL PHONE CALLS TO +14379834063
+setTimeout(function() {
+    console.log('NUCLEAR OVERRIDE: Installing final phone redirect handlers');
+    
+    // Override ALL possible callProvider functions
+    window.callProvider = function(phoneNumber, email, name) {
+        console.log('NUCLEAR OVERRIDE: Forcing call to +14379834063');
+        // Friendly confirmation message
+        if (confirm('📞 Connect with this provider through ConnectYou?\n\nYou\'ll be calling our main line: (437) 983-4063\nWe\'ll connect you to the right provider!')) {
+            // User confirmed, proceed with call
+        } else {
+            event.preventDefault();
+            return false;
+        }
+        window.location.href = 'tel:+14379834063';
+        return false;
+    };
+    
+    // Override ALL possible textProvider functions
+    window.textProvider = function(phoneNumber, email, name) {
+        console.log('NUCLEAR OVERRIDE: Forcing text to +14379834063');
+        // Friendly confirmation message
+        if (confirm('💬 Send a message through ConnectYou?\n\nYou\'ll be texting our main line: (437) 983-4063\nWe\'ll connect you to the right provider!')) {
+            // User confirmed, proceed with text
+        } else {
+            event.preventDefault();
+            return false;
+        }
+        window.location.href = 'sms:+14379834063';
+        return false;
+    };
+    
+    // Intercept ALL tel: clicks
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('a[href^="tel:"]');
+        if (target) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('NUCLEAR OVERRIDE: Intercepted tel: link');
+            // Don't show alert for automatic tel: redirects - they'll see the confirmation above
+            window.location.href = 'tel:+14379834063';
+            return false;
+        }
+    }, true);
+    
+    console.log('NUCLEAR OVERRIDE: All phone redirects installed');
+}, 2000);
+</script>
 {% endblock %}

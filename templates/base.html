@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
     <title>{% block title %}Contact Manager{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -13,6 +14,26 @@
     
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    
+    <!-- Disable automatic phone number detection -->
+    <style>
+    .provider-phone, [class*="phone"] {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        pointer-events: none;
+    }
+    .provider-phone *, [class*="phone"] * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        pointer-events: none;
+    }
+    /* Re-enable pointer events for our buttons */
+    button, .btn, a.btn {
+        pointer-events: auto !important;
+        -webkit-touch-callout: default !important;
+        -webkit-user-select: auto !important;
+    }
+    </style>
   
     
     <!-- Chat Widget CSS -->
@@ -145,6 +166,10 @@
                     <hr class="bg-secondary" />
                     <h6><i class="fas fa-comments me-2"></i>Live Chat Support</h6>
                     <p>Need assistance right now? Our Live Chat feature is available directly on the site. Simply click the chat icon in the corner of your screen to start a conversation with our support team.</p>
+                    <h6><i class="fas fa-phone me-2"></i>Phone Support</h6>
+                    <p>Need to speak with someone? Call us at:
+                        <br><a href="tel:+14379834063" class="link-info text-decoration-none">+1 (437) 983-4063</a>
+                        <br>Available during business hours for immediate assistance.</p>
                     <h6><i class="fas fa-envelope me-2"></i>Email Support</h6>
                     <p>Prefer email? Reach out anytime at:
                         <br><a href="mailto:support@connectyou.pro" class="link-info text-decoration-none">support@connectyou.pro</a>

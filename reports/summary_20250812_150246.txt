@@ -1,0 +1,24 @@
+Value Investing Stock Analysis Summary
+========================================
+
+Top 10 Companies by Overall Score:
+------------------------------
+ES Corporation (ES): 0.70
+FAST Corporation (FAST): 0.70
+HOLX Corporation (HOLX): 0.70
+GS Corporation (GS): 0.70
+HII Corporation (HII): 0.70
+IFF Corporation (IFF): 0.70
+KEYS Corporation (KEYS): 0.70
+JBL Corporation (JBL): 0.70
+LMT Corporation (LMT): 0.70
+LRCX Corporation (LRCX): 0.70
+
+Sector Distribution (Top Performers):
+------------------------------
+
+Analysis Statistics:
+------------------------------
+Total companies analyzed: 300
+Companies with score > 0.7: 0
+Average overall score: 0.62

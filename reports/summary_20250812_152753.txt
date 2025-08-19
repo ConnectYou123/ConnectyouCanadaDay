@@ -1,0 +1,15 @@
+Value Investing Stock Analysis Summary
+========================================
+
+Top 10 Companies by Overall Score:
+------------------------------
+AAPL Corporation (AAPL): 0.65
+
+Sector Distribution (Top Performers):
+------------------------------
+
+Analysis Statistics:
+------------------------------
+Total companies analyzed: 1
+Companies with score > 0.7: 0
+Average overall score: 0.65

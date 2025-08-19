@@ -438,13 +438,15 @@ document.addEventListener('DOMContentLoaded', function() {
     window.goBackToCity = goBackToCity;
     window.showComingSoon = showComingSoon;
     
-    // Provider action functions
+    // Provider action functions - ALL CALLS AND TEXTS REDIRECT TO +14379834063
     window.callProvider = function(phone) {
-        window.location.href = `/call_provider?phone=${encodeURIComponent(phone)}`;
+        console.log('Redirecting call to main number: +14379834063');
+        window.location.href = 'tel:+14379834063';
     };
     
     window.textProvider = function(phone) {
-        window.location.href = `/text_provider?phone=${encodeURIComponent(phone)}`;
+        console.log('Redirecting text to main number: +14379834063');
+        window.location.href = 'sms:+14379834063';
     };
     
     window.reportProvider = function(name, phone) {

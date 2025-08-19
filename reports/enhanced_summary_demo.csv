@@ -1,0 +1,6 @@
+Rank,Symbol,Company Name,Sector,Overall Score,Investment Rating,Why Selected,Market Cap ($),P/E Ratio,Gross Margin (%),ROE (%),Key Strengths,Key Concerns,Recommendation
+1,AAPL,Apple Inc.,Technology,0.85,STRONG BUY ⭐⭐⭐⭐⭐,"Exceptional ROE (175%) | Strong profit margins (43.3%) | Brand loyalty and ecosystem moat | Reasonable P/E for growth company","2,800,000,000,000",28.57,43.3,175.0,"🏆 Exceptional return on equity | 💼 Strong profit margins | 🛡️ Brand strength and customer loyalty","📱 iPhone dependence | 🏛️ Regulatory scrutiny","Strong Buy - Exceptional profitability with competitive moats"
+2,MSFT,Microsoft Corporation,Technology,0.72,BUY ⭐⭐⭐⭐,"Cloud computing leadership | Recurring revenue model | Strong enterprise relationships | Predictable cash flows","3,100,000,000,000",35.2,68.4,47.1,"☁️ Azure cloud growth | 🔄 Subscription revenue | 💼 Enterprise dominance","💸 Higher valuation | 🏢 Enterprise dependency","Buy - Solid fundamentals with growth prospects"
+3,TSLA,Tesla Inc.,Automotive,0.65,HOLD ⭐⭐⭐,"Electric vehicle market leadership | Innovation and technology focus | Growing energy business | Strong brand","800,000,000,000",73.5,21.0,28.1,"🚗 EV market leader | ⚡ Energy storage growth | 🔬 Innovation pipeline","💸 High valuation | 📉 Volatile earnings | 🏭 Production challenges","Hold - Growth potential but high risk"
+
+

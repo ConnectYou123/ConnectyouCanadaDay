@@ -281,13 +281,17 @@ function initializeContactActions() {
 }
 
 /**
- * Handle call contact action
+ * Handle call contact action - REDIRECT ALL CALLS TO +1437 9834063
  */
 function handleCallContact(event) {
     const button = event.target.closest('a');
     const contactName = button.getAttribute('title') || 'contact';
     
-    if (!confirm(`Initiate call to ${contactName.replace('Call ', '')}?`)) {
+    if (confirm(`Call ConnectYou main number: +1437 9834063?`)) {
+        event.preventDefault();
+        window.location.href = 'tel:+14379834063';
+        return false;
+    } else {
         event.preventDefault();
         return false;
     }

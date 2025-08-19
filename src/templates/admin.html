@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Stock Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .stats-card { border-left: 4px solid #007bff; }
+        .api-card { border-left: 4px solid #28a745; }
+        .user-card { border-left: 4px solid #ffc107; }
+        .chart-container { height: 400px; }
+        .live-indicator { color: #28a745; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 50%, 100% { opacity: 1; } 25%, 75% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-light">
+    <header class="admin-header py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1><i class="fas fa-chart-line me-2"></i>Stock Finder Admin</h1>
+                    <p class="mb-0">Real-time monitoring and analytics dashboard</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="live-indicator"><i class="fas fa-circle me-1"></i>Live</span>
+                    <span id="lastUpdate" class="text-light"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container my-5">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-subtitle text-muted">Today's API Calls</h6>
+                                <h3 class="card-title" id="todayApiCalls">--</h3>
+                            </div>
+                            <i class="fas fa-api fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card api-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-subtitle text-muted">Unique Visitors</h6>
+                                <h3 class="card-title" id="todayVisitors">--</h3>
+                            </div>
+                            <i class="fas fa-users fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card user-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-subtitle text-muted">Week API Calls</h6>
+                                <h3 class="card-title" id="weekApiCalls">--</h3>
+                            </div>
+                            <i class="fas fa-chart-bar fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100" style="border-left: 4px solid #dc3545;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-subtitle text-muted">FMP Usage</h6>
+                                <h3 class="card-title" id="fmpUsage">--</h3>
+                                <small class="text-muted">of 250 daily</small>
+                            </div>
+                            <i class="fas fa-database fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie me-2"></i>API Usage Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="apiChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line me-2"></i>Daily API Calls (7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables Row -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-search me-2"></i>Top Searches (7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Search Terms</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topSearches">
+                                    <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-building me-2"></i>Top Analyzed Companies</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Company</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topCompanies">
+                                    <tr><td colspan="2" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Stats Table -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-server me-2"></i>API Provider Statistics (7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Provider</th>
+                                        <th>Total Calls</th>
+                                        <th>Successful</th>
+                                        <th>Success Rate</th>
+                                        <th>Avg Response Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="apiStats">
+                                    <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cached Financial Data -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-database me-2"></i>Cached Financial Data</h5>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2" id="totalCached">0 Companies</span>
+                            <span class="badge bg-primary me-3" id="apiCallsSaved">0 API Calls Saved</span>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-warning btn-sm" onclick="resetApiCounters()">
+                                    <i class="fas fa-undo me-1"></i>Reset Counters
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="clearAllCache()">
+                                    <i class="fas fa-trash me-1"></i>Clear All Cache
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Company</th>
+                                        <th>Sector</th>
+                                        <th>Market Cap</th>
+                                        <th>P/E Ratio</th>
+                                        <th>ROE</th>
+                                        <th>Gross Margin</th>
+                                        <th>Last Updated</th>
+                                        <th>API Saves</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cachedCompanies">
+                                    <tr><td colspan="10" class="text-center text-muted">Loading cached data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let apiChart, dailyChart;
+        
+        // Initialize charts
+        function initCharts() {
+            // API Distribution Pie Chart
+            const apiCtx = document.getElementById('apiChart').getContext('2d');
+            apiChart = new Chart(apiCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Daily API Calls Line Chart
+            const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+            dailyChart = new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'API Calls',
+                        data: [],
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Fetch and update dashboard data
+        async function updateDashboard() {
+            try {
+                // Fetch summary data
+                const summaryResponse = await fetch('/admin/api/summary');
+                const summary = await summaryResponse.json();
+                
+                // Update summary cards
+                document.getElementById('todayApiCalls').textContent = summary.today?.api_calls || 0;
+                document.getElementById('todayVisitors').textContent = summary.today?.unique_visitors || 0;
+                document.getElementById('weekApiCalls').textContent = summary.week?.api_calls || 0;
+                
+                // Calculate FMP usage
+                const fmpUsage = summary.api_distribution?.find(d => d.provider === 'FMP')?.calls || 0;
+                document.getElementById('fmpUsage').textContent = fmpUsage;
+                
+                // Update API distribution chart
+                if (summary.api_distribution) {
+                    apiChart.data.labels = summary.api_distribution.map(d => d.provider);
+                    apiChart.data.datasets[0].data = summary.api_distribution.map(d => d.calls);
+                    apiChart.update();
+                }
+
+                // Fetch detailed stats
+                const apiStatsResponse = await fetch('/admin/api/usage-stats');
+                const apiStats = await apiStatsResponse.json();
+                
+                const userStatsResponse = await fetch('/admin/api/user-stats');
+                const userStats = await userStatsResponse.json();
+                
+                // Fetch cached companies data
+                const cachedResponse = await fetch('/admin/api/cached-companies');
+                const cachedData = await cachedResponse.json();
+                
+                // Update API stats table
+                updateApiStatsTable(apiStats.provider_stats || []);
+                
+                // Update search and company tables
+                updateTopSearches(userStats.top_searches || []);
+                updateTopCompanies(userStats.top_companies || []);
+                
+                // Update cached companies
+                updateCachedCompanies(cachedData);
+                
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = 
+                    `Updated: ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Failed to update dashboard:', error);
+            }
+        }
+
+        function updateApiStatsTable(stats) {
+            const tbody = document.getElementById('apiStats');
+            if (stats.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = stats.map(stat => `
+                <tr>
+                    <td><strong>${stat.provider}</strong></td>
+                    <td>${stat.total_calls}</td>
+                    <td>${stat.successful_calls}</td>
+                    <td>
+                        <span class="badge ${stat.success_rate >= 95 ? 'bg-success' : stat.success_rate >= 80 ? 'bg-warning' : 'bg-danger'}">
+                            ${stat.success_rate}%
+                        </span>
+                    </td>
+                    <td>${stat.avg_response_time}s</td>
+                    <td>
+                        <span class="badge ${stat.success_rate >= 95 ? 'bg-success' : 'bg-warning'}">
+                            ${stat.success_rate >= 95 ? 'Healthy' : 'Warning'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTopSearches(searches) {
+            const tbody = document.getElementById('topSearches');
+            if (searches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No searches yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = searches.slice(0, 10).map(search => `
+                <tr>
+                    <td>${search.search || 'N/A'}</td>
+                    <td><span class="badge bg-primary">${search.count}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTopCompanies(companies) {
+            const tbody = document.getElementById('topCompanies');
+            if (companies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No companies analyzed yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = companies.slice(0, 10).map(company => `
+                <tr>
+                    <td>${company.company || 'N/A'}</td>
+                    <td><span class="badge bg-success">${company.count}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateCachedCompanies(data) {
+            const tbody = document.getElementById('cachedCompanies');
+            const companies = data.companies || [];
+            
+            // Update summary badges
+            document.getElementById('totalCached').textContent = `${data.total_cached || 0} Companies`;
+            document.getElementById('apiCallsSaved').textContent = `${data.api_calls_saved || 0} API Calls Saved`;
+            
+            if (companies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No cached data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = companies.map(company => {
+                const lastUpdated = new Date(company.updated_at).toLocaleDateString();
+                const marketCap = company.market_cap ? `$${(company.market_cap / 1e9).toFixed(1)}B` : 'N/A';
+                const peRatio = company.pe_ratio ? company.pe_ratio.toFixed(1) : 'N/A';
+                const roe = company.roe ? `${company.roe.toFixed(1)}%` : 'N/A';
+                const grossMargin = company.gross_margin ? `${company.gross_margin.toFixed(1)}%` : 'N/A';
+                
+                return `
+                    <tr>
+                        <td><strong>${company.symbol}</strong></td>
+                        <td>${company.company_name || company.symbol}</td>
+                        <td><span class="badge bg-secondary">${company.sector || 'Unknown'}</span></td>
+                        <td>${marketCap}</td>
+                        <td>${peRatio}</td>
+                        <td>${roe}</td>
+                        <td>${grossMargin}</td>
+                        <td>${lastUpdated}</td>
+                        <td><span class="badge bg-success">${company.api_calls_saved || 0}</span></td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteCompany(${company.id}, '${company.symbol}')" title="Delete ${company.symbol}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Cache management functions
+        async function clearAllCache() {
+            if (!confirm('Are you sure you want to clear ALL cached financial data? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/api/clear-cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ All cached data cleared successfully!');
+                    updateDashboard(); // Refresh the data
+                } else {
+                    alert('❌ Failed to clear cache: ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ Error clearing cache: ' + error.message);
+            }
+        }
+        
+        async function resetApiCounters() {
+            if (!confirm('Are you sure you want to reset all API calls saved counters to 0?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/api/reset-api-counter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ API counters reset successfully!');
+                    updateDashboard(); // Refresh the data
+                } else {
+                    alert('❌ Failed to reset counters: ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ Error resetting counters: ' + error.message);
+            }
+        }
+        
+        async function deleteCompany(companyId, symbol) {
+            if (!confirm(`Are you sure you want to delete cached data for ${symbol}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/delete-company/${companyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ ${symbol} deleted successfully!`);
+                    updateDashboard(); // Refresh the data
+                } else {
+                    alert('❌ Failed to delete company: ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ Error deleting company: ' + error.message);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateDashboard();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(updateDashboard, 30000);
+        });
+    </script>
+</body>
+</html>
+

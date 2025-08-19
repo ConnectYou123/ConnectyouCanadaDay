@@ -1,0 +1,24 @@
+Value Investing Stock Analysis Summary
+========================================
+
+Top 10 Companies by Overall Score:
+------------------------------
+AOS Corporation (AOS): 0.70
+ABNB Corporation (ABNB): 0.70
+MO Corporation (MO): 0.70
+AME Corporation (AME): 0.70
+ACGL Corporation (ACGL): 0.70
+ABT Corporation (ABT): 0.69
+AKAM Corporation (AKAM): 0.69
+AMZN Corporation (AMZN): 0.69
+AMGN Corporation (AMGN): 0.69
+ADM Corporation (ADM): 0.69
+
+Sector Distribution (Top Performers):
+------------------------------
+
+Analysis Statistics:
+------------------------------
+Total companies analyzed: 50
+Companies with score > 0.7: 0
+Average overall score: 0.62

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  stock-finder:
+    build: .
+    container_name: value-investing-stock-finder
+    environment:
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - SEC_API_KEY=${SEC_API_KEY}
+      - MIN_MARKET_CAP=${MIN_MARKET_CAP:-100000000}
+      - MAX_PE_RATIO=${MAX_PE_RATIO:-30}
+      - MIN_ROE=${MIN_ROE:-30}
+      - MIN_GROSS_MARGIN=${MIN_GROSS_MARGIN:-40}
+      - MIN_SALES_GROWTH=${MIN_SALES_GROWTH:-15}
+      - CACHE_DURATION=${CACHE_DURATION:-3600}
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-5}
+    volumes:
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a web interface service
+  web-interface:
+    build: .
+    container_name: stock-finder-web
+    ports:
+      - "3000:3000"
+    environment:
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - SEC_API_KEY=${SEC_API_KEY}
+    volumes:
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+    command: ["python", "src/main.py"]
+    depends_on:
+      - stock-finder
+    restart: unless-stopped
+
+volumes:
+  reports:
+  logs:
+  cache:

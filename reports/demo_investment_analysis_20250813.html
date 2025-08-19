@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Investment Analysis Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .investment-card { border-left: 5px solid #007bff; margin-bottom: 20px; }
+        .strong-buy { border-left-color: #28a745 !important; }
+        .buy { border-left-color: #6f42c1 !important; }
+        .hold { border-left-color: #ffc107 !important; }
+        .weak-hold { border-left-color: #fd7e14 !important; }
+        .avoid { border-left-color: #dc3545 !important; }
+        .score-badge { font-size: 1.2em; font-weight: bold; }
+        .strength { color: #28a745; }
+        .concern { color: #dc3545; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    Enhanced Investment Analysis Report
+                </h1>
+                <p class="text-center text-muted">Generated on August 13, 2025 at 4:53 AM</p>
+                <hr>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle me-2"></i>How to Read This Report</h5>
+                    <ul class="mb-0">
+                        <li><strong>Overall Score:</strong> 0-1 scale where 1.0 is perfect (0.80+ = Strong Buy, 0.70+ = Buy, 0.60+ = Hold)</li>
+                        <li><strong>Strengths:</strong> Key positive factors that make this a good investment</li>
+                        <li><strong>Concerns:</strong> Areas of weakness or risk to monitor</li>
+                        <li><strong>Financial Metrics:</strong> Color-coded performance indicators</li>
+                        <li><strong>Why Selected:</strong> Specific reasons why our system identified this stock</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-chart-bar me-2"></i>Analysis Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h4 class="text-primary">3</h4>
+                                <p class="text-muted">Companies Analyzed</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-success">1</h4>
+                                <p class="text-muted">Strong Buy Recommendations</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-info">1</h4>
+                                <p class="text-muted">Buy Recommendations</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h4 class="text-warning">0.74</h4>
+                                <p class="text-muted">Average Score</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- AAPL Example -->
+            <div class="col-lg-6 mb-4">
+                <div class="card investment-card strong-buy">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">AAPL - Apple Inc.</h5>
+                            <small class="text-muted">Technology</small>
+                        </div>
+                        <span class="score-badge badge bg-success">0.85</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-success">STRONG BUY ⭐⭐⭐⭐⭐</h6>
+                            <p class="text-muted small mb-0">Excellent value investment opportunity with strong fundamentals</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-info"><i class="fas fa-bullseye me-1"></i>Why This Stock Was Selected</h6>
+                            <ul class="list-unstyled small">
+                                <li class="text-info">🎯 <strong>Low P/E Ratio:</strong> 28.57 (reasonable for growth)</li>
+                                <li class="text-info">📈 <strong>High ROE:</strong> 175% (exceptional profitability)</li>
+                                <li class="text-info">💰 <strong>Strong Margins:</strong> 43.3% gross margin</li>
+                                <li class="text-info">🏰 <strong>Economic Moat:</strong> Brand loyalty and ecosystem lock-in</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Market Cap</small>
+                                <div class="fw-bold">$2.8T</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">P/E Ratio</small>
+                                <div class="fw-bold">28.57</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-success"><i class="fas fa-thumbs-up me-1"></i>Key Strengths</h6>
+                            <ul class="list-unstyled">
+                                <li class="strength small">🏆 Exceptional return on equity (175%)</li>
+                                <li class="strength small">💼 Strong profit margins (43.3%)</li>
+                                <li class="strength small">🛡️ Brand strength and customer loyalty</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Areas to Monitor</h6>
+                            <ul class="list-unstyled">
+                                <li class="concern small">📱 Dependence on iPhone sales</li>
+                                <li class="concern small">🏛️ Regulatory scrutiny</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-outline-primary btn-sm" onclick="toggleDetails('AAPL')">
+                                <i class="fas fa-chart-line me-1"></i>View Detailed Metrics
+                            </button>
+                        </div>
+                        
+                        <div id="details-AAPL" class="mt-3" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr><td>Gross Margin</td><td class="text-success">43.3%</td></tr>
+                                    <tr><td>Return on Equity</td><td class="text-success">175.0%</td></tr>
+                                    <tr><td>Revenue</td><td>$394.3B</td></tr>
+                                    <tr><td>Market Cap</td><td>$2.8T</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MSFT Example -->
+            <div class="col-lg-6 mb-4">
+                <div class="card investment-card buy">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">MSFT - Microsoft Corporation</h5>
+                            <small class="text-muted">Technology</small>
+                        </div>
+                        <span class="score-badge badge bg-primary">0.72</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-primary">BUY ⭐⭐⭐⭐</h6>
+                            <p class="text-muted small mb-0">Good value investment with solid metrics</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-info"><i class="fas fa-bullseye me-1"></i>Why This Stock Was Selected</h6>
+                            <ul class="list-unstyled small">
+                                <li class="text-info">☁️ <strong>Cloud Dominance:</strong> Azure growing rapidly</li>
+                                <li class="text-info">💡 <strong>Recurring Revenue:</strong> Software subscriptions</li>
+                                <li class="text-info">🔄 <strong>Business Model:</strong> Predictable cash flows</li>
+                                <li class="text-info">🎯 <strong>Market Position:</strong> Enterprise software leader</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Market Cap</small>
+                                <div class="fw-bold">$3.1T</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">P/E Ratio</small>
+                                <div class="fw-bold">35.2</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-success"><i class="fas fa-thumbs-up me-1"></i>Key Strengths</h6>
+                            <ul class="list-unstyled">
+                                <li class="strength small">☁️ Cloud computing leadership</li>
+                                <li class="strength small">🔄 Recurring revenue model</li>
+                                <li class="strength small">💼 Strong enterprise relationships</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Investment Insights & Recommendations</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>📈 Top Picks</h6>
+                            <ul>
+                                <li><strong>AAPL:</strong> Exceptional profitability and brand moat</li>
+                                <li><strong>MSFT:</strong> Cloud growth and recurring revenue</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>🎯 Selection Criteria Met</h6>
+                            <ul>
+                                <li>Strong competitive advantages</li>
+                                <li>Consistent profitability</li>
+                                <li>Reasonable valuations</li>
+                                <li>Quality management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-secondary">
+                    <h6><i class="fas fa-info-circle me-2"></i>Important Disclaimers</h6>
+                    <ul class="mb-0 small">
+                        <li>This analysis is for educational purposes only and not financial advice</li>
+                        <li>Past performance does not guarantee future results</li>
+                        <li>Always do your own research and consult with financial advisors</li>
+                        <li>Consider your risk tolerance and investment timeline</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleDetails(symbol) {
+            const details = document.getElementById('details-' + symbol);
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
