@@ -22,3 +22,5 @@ tabula-py>=2.8.2
 regex>=2023.8.8
 PyPDF2>=3.0.1
 markupsafe>=2.1.0
+twilio>=9.0.0
+mailersend==0.5.5
