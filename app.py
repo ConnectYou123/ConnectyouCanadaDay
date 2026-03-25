@@ -48,16 +48,27 @@ with app.app_context():
     # Create all tables
     db.create_all()
 
-    # Ensure admin user exists with correct password
-    admin_password = os.environ.get("ADMIN_PASSWORD", "Iloveyou123!")
-    admin_user = models.User.query.filter_by(username='admin', role='admin').first()
-    if admin_user:
-        admin_user.set_password(admin_password)
-    else:
-        admin_user = models.User(username='admin', email='admin@connectyou.pro', role='admin')
-        admin_user.set_password(admin_password)
-        db.session.add(admin_user)
-    db.session.commit()
+    # Ensure admin user exists with correct password on every boot
+    try:
+        admin_password = os.environ.get("ADMIN_PASSWORD", "Iloveyou123!")
+        admin_user = models.User.query.filter_by(username='admin', role='admin').first()
+        if admin_user:
+            admin_user.set_password(admin_password)
+            db.session.commit()
+            logging.info("Admin password updated successfully")
+        else:
+            admin_user = models.User(username='admin', email='admin@connectyou.pro', role='admin')
+            admin_user.set_password(admin_password)
+            db.session.add(admin_user)
+            db.session.commit()
+            logging.info("Admin user created successfully")
+    except Exception as e:
+        logging.error(f"Failed to set admin password: {e}")
+        db.session.rollback()
+
+@app.route('/health')
+def health_check():
+    return {'status': 'ok', 'version': '2026.03.25'}
 
 from flask_migrate import Migrate
 
