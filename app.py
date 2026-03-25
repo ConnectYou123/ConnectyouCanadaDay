@@ -1,5 +1,6 @@
 import os
 import logging
+from dotenv import load_dotenv
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -13,6 +14,15 @@ class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
+
+# Load environment variables (supports .env and instance/.env)
+load_dotenv()
+try:
+    instance_env = os.path.join(os.path.dirname(__file__), 'instance', '.env')
+    if os.path.exists(instance_env):
+        load_dotenv(instance_env, override=True)
+except Exception:
+    pass
 
 # Create the app
 app = Flask(__name__)

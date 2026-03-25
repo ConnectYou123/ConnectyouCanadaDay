@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid my-4">
+  <style>
+    /* Widen content for review screen */
+    main.container { max-width: 1280px; width: 100%; }
+    .detail-wrap { max-width: 1100px; margin: 0 auto; }
+    .detail-card { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 24px rgba(0,0,0,0.35); border-radius: 14px; }
+    .thumb { width: 100%; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.2); }
+    .attachment-tile { display: flex; flex-direction: column; gap: 8px; }
+    .preserve-whitespace { white-space: pre-wrap; word-break: break-word; }
+  </style>
+
+  <div class="detail-wrap">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="text-white mb-0">Interaction Log #{{ log.id }}</h2>
+      <div>
+        <a class="btn btn-outline-secondary me-2" href="/reports">Back to Admin</a>
+        <a class="btn btn-secondary me-2" href="{{ url_for('admin_list_interactions') }}">Back to Logs</a>
+        <a class="btn btn-primary me-2" href="{{ url_for('admin_edit_interaction', log_id=log.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('admin_delete_interaction', log_id=log.id) }}" style="display:inline;" onsubmit="return confirm('Delete this interaction log? This cannot be undone.');">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card bg-dark text-white mb-3 detail-card">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-8">
+            <div class="mb-2"><strong>Title:</strong> {{ log.title }}</div>
+            <div class="mb-2"><strong>Client name:</strong> {{ log.author_name or '-' }}</div>
+            <div class="mb-2"><strong>Phone:</strong> {{ log.client_phone or '-' }}</div>
+            <div class="mb-2"><strong>Email:</strong> {{ log.client_email or '-' }}</div>
+            <div class="mb-2"><strong>Address:</strong> {{ log.client_address or '-' }}</div>
+            <div class="mb-2"><strong>Service city:</strong> {{ log.service_city or '-' }}</div>
+            <div class="mb-2"><strong>Service needed:</strong> {{ log.service_needed or '-' }}</div>
+            <div class="mb-2"><strong>Found us via:</strong> {{ log.referral_source or '-' }}</div>
+            <div class="mb-2"><strong>Occurred at:</strong> {{ log.occurred_at.strftime('%Y-%m-%d %H:%M') if log.occurred_at else '' }}</div>
+          </div>
+          <div class="col-md-12">
+            <div class="mb-0"><strong>Description:</strong></div>
+            <div class="text-muted preserve-whitespace">{{ (log.description or '-') | mini_md }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-dark text-white detail-card">
+      <div class="card-body">
+        <h5 class="mb-3">Attachments ({{ log.attachments|length }})</h5>
+        {% if log.attachments %}
+        <div class="row g-3">
+          {% for a in log.attachments %}
+            {% set fname = (a.original_filename or a.file_path)|lower %}
+            <div class="col-md-4 col-sm-6">
+              <div class="bg-dark p-2 border rounded attachment-tile" style="border-color: rgba(255,255,255,0.2) !important;">
+                {% if fname.endswith('.png') or fname.endswith('.jpg') or fname.endswith('.jpeg') or fname.endswith('.gif') or fname.endswith('.webp') %}
+                  <a href="/{{ a.file_path }}" target="_blank">
+                    <img src="/{{ a.file_path }}" alt="thumb" class="thumb">
+                  </a>
+                {% else %}
+                  <div class="d-flex align-items-center justify-content-center" style="height:120px;">
+                    <i class="fas fa-paperclip text-muted"></i>
+                  </div>
+                {% endif %}
+                <div class="small text-truncate">{{ a.original_filename or a.file_path }}</div>
+                <a class="btn btn-sm btn-outline-info w-100" href="/{{ a.file_path }}" target="_blank">Open</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-muted mb-0">No attachments.</p>
+        {% endif %}
+        <hr class="bg-secondary"/>
+        <div class="d-flex align-items-start gap-3">
+          <form method="post" action="{{ url_for('admin_update_interaction_status', log_id=log.id) }}" class="d-flex align-items-start gap-2">
+            <input type="hidden" name="status" value="complete" />
+            <textarea name="status_note" class="form-control bg-dark text-white" rows="2" placeholder="Optional note (why/how)">{{ log.status_note or '' }}</textarea>
+            <button type="submit" class="btn btn-success">Mark Complete</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_update_interaction_status', log_id=log.id) }}" class="d-flex align-items-start gap-2">
+            <input type="hidden" name="status" value="incomplete" />
+            <textarea name="status_note" class="form-control bg-dark text-white" rows="2" placeholder="Reason incomplete">{{ log.status_note or '' }}</textarea>
+            <button type="submit" class="btn btn-danger">Mark Incomplete</button>
+          </form>
+        </div>
+        <div class="mt-2 small text-muted">Current status: <span class="badge {% if log.status == 'complete' %}bg-success{% else %}bg-danger{% endif %}">{{ log.status|capitalize }}</span> {% if log.status_note %}- {{ log.status_note }}{% endif %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

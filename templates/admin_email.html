@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="text-white mb-3">Email Providers</h2>
+  <a class="btn btn-outline-secondary mb-3" href="/reports">Back to Admin</a>
+
+  <div class="card bg-dark text-white">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Subject</label>
+          <input name="subject" class="form-control bg-dark text-white" placeholder="Subject" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Message</label>
+          <textarea name="body" class="form-control bg-dark text-white" rows="6" placeholder="Write your email message here..."></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Manual emails (comma or semicolon separated)</label>
+          <input name="manual_emails" class="form-control bg-dark text-white" placeholder="example@domain.com, other@domain.com" />
+          <small class="text-muted">Tip: Use commas or semicolons. We’ll trim spaces and ignore blanks automatically.</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Filter Providers</label>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <select class="form-select bg-dark text-white" id="filter-city" onchange="onFilterChange()">
+                <option value="">All Cities</option>
+                {% for c in cities %}
+                  <option value="{{ c }}" {% if c == selected_city %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <select class="form-select bg-dark text-white" id="filter-category" onchange="onFilterChange()">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                  <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Select Providers (by email)</label>
+          <div class="border rounded p-2" style="max-height: 340px; overflow: auto;">
+            {% for p in providers %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="{{ p.id }}" id="p{{ p.id }}" name="provider_ids" {% if not p.email %}disabled{% endif %}>
+                <label class="form-check-label" for="p{{ p.id }}">
+                  {{ p.name }}{% if p.email %} &lt;{{ p.email }}&gt;{% else %} <span class="text-muted">(no email)</span>{% endif %} — {{ p.city }} · {{ p.service_category }}
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Attachments</label>
+          <input type="file" name="attachments" class="form-control bg-dark text-white" multiple />
+          <small class="text-muted">You can attach multiple files and images.</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Send Emails</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function onFilterChange(){
+    var city = document.getElementById('filter-city').value;
+    var cat = document.getElementById('filter-category').value;
+    var params = new URLSearchParams(window.location.search);
+    if (city) { params.set('city', city); } else { params.delete('city'); }
+    if (cat) { params.set('category', cat); } else { params.delete('category'); }
+    var url = window.location.pathname + (params.toString() ? ('?' + params.toString()) : '');
+    window.location.href = url;
+  }
+</script>
+{% endblock %}
+

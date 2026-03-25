@@ -97,6 +97,8 @@ class ServiceProvider(db.Model):
     service_category = db.Column(db.String(100), nullable=False)
     star_rating = db.Column(db.Float, default=4.5)  # Out of 5
     review_count = db.Column(db.Integer, default=100)
+    # Optional Google mapping for accurate ratings sync
+    google_place_id = db.Column(db.String(128), nullable=True, index=True)
     description = db.Column(db.Text)
     specialties = db.Column(db.Text)  # JSON string of specialties
     years_experience = db.Column(db.Integer)
@@ -261,3 +263,63 @@ class Advertisement(db.Model):
     
     def __repr__(self):
         return f'<Advertisement {self.title} in {self.city_name} - {self.category_name}>'
+
+
+# ---------------------------------------------
+# Customer interaction logging
+# ---------------------------------------------
+class InteractionLog(db.Model):
+    """Represents a single customer interaction note/log.
+
+    Stores high-level details about the interaction and links to any
+    uploaded attachments such as images or documents.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    author_name = db.Column(db.String(120), nullable=True)
+    client_address = db.Column(db.String(300), nullable=True)
+    service_needed = db.Column(db.String(150), nullable=True)
+    client_phone = db.Column(db.String(50), nullable=True)
+    client_email = db.Column(db.String(120), nullable=True)
+    service_city = db.Column(db.String(100), nullable=True)
+    referral_source = db.Column(db.String(120), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='incomplete')  # complete, incomplete
+    status_note = db.Column(db.Text, nullable=True)
+    occurred_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    attachments = db.relationship(
+        'InteractionAttachment',
+        backref='log',
+        lazy=True,
+        cascade='all, delete-orphan'
+    )
+
+    def __repr__(self):
+        return f'<InteractionLog {self.id} - {self.title}>'
+
+
+class InteractionAttachment(db.Model):
+    """File uploaded and attached to an interaction log."""
+    id = db.Column(db.Integer, primary_key=True)
+    log_id = db.Column(db.Integer, db.ForeignKey('interaction_log.id'), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<InteractionAttachment {self.id} -> log {self.log_id}>'
+
+
+class EmailLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=True)
+    recipients = db.Column(db.Text, nullable=False)  # comma separated
+    attachments = db.Column(db.Text, nullable=True)  # comma separated filenames
+    status = db.Column(db.String(20), nullable=False, default='sent')  # sent, failed
+    error = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

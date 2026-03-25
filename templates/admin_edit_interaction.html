@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="text-white mb-3">Edit Log #{{ log.id }}</h2>
+  <a class="btn btn-secondary mb-3" href="{{ url_for('admin_interaction_detail', log_id=log.id) }}">Back to Detail</a>
+  <a class="btn btn-outline-secondary mb-3 ms-2" href="/reports">Back to Admin</a>
+
+  <div class="card bg-dark text-white">
+    <div class="card-body">
+      <!-- Main edit form (no nested forms inside) -->
+      <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          <input type="text" name="title" value="{{ log.title }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Client name</label>
+          <input type="text" name="author_name" value="{{ log.author_name }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Client phone</label>
+            <input type="text" name="client_phone" value="{{ log.client_phone }}" class="form-control bg-dark text-white" />
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Client email</label>
+            <input type="text" name="client_email" value="{{ log.client_email }}" class="form-control bg-dark text-white" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label">Client address</label>
+            <input type="text" name="client_address" value="{{ log.client_address }}" class="form-control bg-dark text-white" />
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Service city</label>
+            <input type="text" name="service_city" value="{{ log.service_city }}" class="form-control bg-dark text-white" />
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Service needed</label>
+          <input type="text" name="service_needed" value="{{ log.service_needed }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">How did they hear about us?</label>
+          <input type="text" name="referral_source" value="{{ log.referral_source }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Occurred at</label>
+          <input type="datetime-local" name="occurred_at" value="{{ default_dt }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control bg-dark text-white" rows="4">{{ log.description }}</textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Add attachments</label>
+          <div class="d-flex align-items-center gap-2">
+            <input type="file" name="attachments" class="form-control bg-dark text-white" multiple />
+            <button type="button" class="btn btn-outline-primary" onclick="this.previousElementSibling.click()">+ Add more</button>
+          </div>
+          <small class="text-muted">You can select multiple files at once. Use "+ Add more" to reopen the chooser.</small>
+        </div>
+
+        <hr class="bg-secondary"/>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+
+      <!-- Status forms placed OUTSIDE the main edit form to avoid nesting -->
+      <div class="mt-4 d-flex align-items-start gap-3">
+        <form method="post" action="{{ url_for('admin_update_interaction_status', log_id=log.id) }}" class="d-flex align-items-start gap-2">
+          <input type="hidden" name="status" value="complete" />
+          <textarea name="status_note" class="form-control bg-dark text-white" rows="2" placeholder="Optional note (why/how)">{{ log.status_note or '' }}</textarea>
+          <button type="submit" class="btn btn-success">Mark Complete</button>
+        </form>
+        <form method="post" action="{{ url_for('admin_update_interaction_status', log_id=log.id) }}" class="d-flex align-items-start gap-2">
+          <input type="hidden" name="status" value="incomplete" />
+          <textarea name="status_note" class="form-control bg-dark text-white" rows="2" placeholder="Reason incomplete">{{ log.status_note or '' }}</textarea>
+          <button type="submit" class="btn btn-danger">Mark Incomplete</button>
+        </form>
+      </div>
+      <div class="mt-2 small text-muted">Current status: <span class="badge {% if log.status == 'complete' %}bg-success{% else %}bg-danger{% endif %}">{{ log.status|capitalize }}</span> {% if log.status_note %}- {{ log.status_note }}{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

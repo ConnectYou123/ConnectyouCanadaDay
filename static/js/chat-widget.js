@@ -151,20 +151,41 @@ class ChatWidget {
     return phone;
   }
 
-  init() {
+init() {
     this.createWidget();
     this.attachEventListeners();
-    this.updateUserInfoVisibility();
     this.injectCityStyles();
 
-    const phone = sessionStorage.getItem('chatPhone');
+    const urlParams = new URLSearchParams(window.location.search);
+    let phone = urlParams.get('phone')?.replace(/ /g, '+') || sessionStorage.getItem('chatPhone');
+    const name = urlParams.get('name') || sessionStorage.getItem('chatName') || '';
+    const email = urlParams.get('email') || sessionStorage.getItem('chatEmail') || '';
+
     if (phone) {
-      this.currentPollingPhone = phone;
-      this.loadChatMessages(phone);
+        this.currentPollingPhone = phone;
+        sessionStorage.setItem('chatPhone', phone);
+        sessionStorage.setItem('chatName', name);
+        sessionStorage.setItem('chatEmail', email);
+        this.updateUserInfoVisibility();
+        this.loadChatMessages(phone).then(hasMessages => {
+            // If no messages, clear session and URL
+            if (!hasMessages) {
+                sessionStorage.removeItem('chatPhone');
+                sessionStorage.removeItem('chatName');
+                sessionStorage.removeItem('chatEmail');
+                this.resetConversation();
+                // Remove URL parameters
+                history.replaceState(null, '', window.location.pathname);
+            }
+        });
+        this.openChat();
     } else {
-      this.addWelcomeMessage();
+        this.addWelcomeMessage();
     }
-  }
+}
+
+
+
 
   createWidget() {
     const widgetHTML = `
@@ -350,7 +371,7 @@ class ChatWidget {
         </div>
         <div class="message-content">
           <p>Welcome to ConnectYou.pro! 👋</p>
-          <p class="welcome-text">I'm ${this.botName}, here to help you find the perfect service provider for your needs. What type of service are you looking for?</p>
+          <p class="welcome-text">I'm ${this.botName}, here to help you find the perfect service provider for your needs. please provide us real email. Your email helps us contact you if the chat closes — we won’t spam you. What type of service are you looking for?</p>
           <div class="quick-replies">
             ${Object.keys(this.serviceCategories).map(cat => `<div class="quick-reply">${cat}</div>`).join('')}
           </div>
@@ -614,7 +635,7 @@ class ChatWidget {
       Would you like me to show them now or adjust any details?`;
   }
 
-  sendMessage() {
+ sendMessage() {
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
     if (!message) return;
@@ -623,6 +644,13 @@ class ChatWidget {
     const email = document.getElementById('chatEmail').value.trim();
     const phoneRaw = document.getElementById('chatPhone').value.trim();
     const phone = this.formatPhoneNumber(phoneRaw);
+
+    // Email must be entered and valid
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailPattern.test(email)) {
+        this.showStatusNotification('Please enter a valid email address so we can contact you.');
+        return; // Stop sending message until valid email provided
+    }
 
     // Store user info in sessionStorage
     sessionStorage.setItem('chatName', name);
@@ -636,7 +664,8 @@ class ChatWidget {
 
     this.showStatusNotification('We have notified the admin. We will contact you soon.');
     this.sendChatMessageToServer({ name, email, phone, message });
-  }
+}
+
 
   async sendChatMessageToServer({ name, email, phone, message }) {
     try {
@@ -684,41 +713,44 @@ class ChatWidget {
     this.lastMessageCount = 0;
   }
 
-  async loadChatMessages(phone) {
+async loadChatMessages(phone) {
     try {
-      const response = await fetch('/api/get-chat-messages-by-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
-      });
+        const response = await fetch('/api/get-chat-messages-by-phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
 
-      const chatMessages = document.getElementById('chatMessages');
-      if (data.success && data.messages.length > 0) {
-        if (data.messages.length !== this.lastMessageCount) {
-          this.lastMessageCount = data.messages.length;
-          chatMessages.innerHTML = '';
-          data.messages.forEach(msg => {
-            this.addMessage(msg.text, msg.sender === 'user');
-          });
+        const chatMessages = document.getElementById('chatMessages');
+
+        if (data.success && data.messages.length > 0) {
+            if (data.messages.length !== this.lastMessageCount) {
+                this.lastMessageCount = data.messages.length;
+                chatMessages.innerHTML = '';
+                data.messages.forEach(msg => {
+                    this.addMessage(msg.text, msg.sender === 'user');
+                });
+            }
+            if (!this.chatPollInterval) {
+                this.chatPollInterval = setInterval(() => {
+                    this.loadChatMessages(phone);
+                }, 5000);
+            }
+            return true; // messages exist
+        } else {
+            return false; // no messages
         }
-      } else {
-        this.addWelcomeMessage();
-        this.lastMessageCount = 0;
-      }
 
-      if (!this.chatPollInterval) {
-        this.chatPollInterval = setInterval(() => {
-          this.loadChatMessages(phone);
-        }, 5000);
-      }
     } catch (err) {
-      console.error('Failed to load chat messages:', err);
-      this.resetConversation();
+        console.error('Failed to load chat messages:', err);
+        return false;
     }
-  }
+}
+
+
 }
 
 let chatWidgetInstance = null;

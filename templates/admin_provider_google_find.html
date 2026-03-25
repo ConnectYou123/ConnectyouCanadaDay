@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h3 class="text-white mb-3">Find on Google: {{ provider.name }}</h3>
+  <a class="btn btn-outline-secondary mb-3" href="{{ url_for('admin_providers', city=provider.city) }}">Back to Providers</a>
+
+  <div class="card bg-dark text-white">
+    <div class="card-body">
+      <form method="post" class="mb-3 d-flex gap-2">
+        <input type="text" name="q" value="{{ query }}" class="form-control bg-dark text-white" placeholder="Search text (name + address)" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+
+      {% if candidates %}
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Rating</th>
+              <th>Reviews</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in candidates %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td class="small">{{ c.formatted_address }}</td>
+              <td>{{ c.rating or '-' }}</td>
+              <td>{{ c.user_ratings_total or '-' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin_provider_google_select', provider_id=provider.id) }}">
+                  <input type="hidden" name="place_id" value="{{ c.place_id }}" />
+                  <button class="btn btn-sm btn-success" type="submit">Select</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">Enter a search and press Search to see candidates.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+

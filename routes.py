@@ -2,6 +2,8 @@ import os
 import logging
 from datetime import datetime, timedelta
 from flask import Flask, render_template, Blueprint, request, redirect, url_for, flash, session, jsonify, send_from_directory, abort
+from markupsafe import Markup, escape
+import re
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, or_, desc
 
@@ -11,13 +13,16 @@ from app import app, db
 # Models
 from models import (
     User, ContactList, Contact, CommunicationLog, ServiceProviderReport, ServiceProvider,
-    AppDownloadTracking, NotificationChange, City, Category, ChatConversation, ChatMessage, Advertisement
+    AppDownloadTracking, NotificationChange, City, Category, ChatConversation, ChatMessage, Advertisement,
+    InteractionLog, InteractionAttachment
 )
 from chat_models import ChatIcon
 
 # Services
 from twilio_service import send_sms, make_call
 from email_service import send_report_email
+from simple_email_service import send_smtp_email
+from models import EmailLog
 
 # External packages
 import requests
@@ -47,6 +52,25 @@ logging.basicConfig(level=logging.DEBUG)
 # Blueprints
 import admin_chat_routes  # must be imported after `app` is defined
 notifications_bp = Blueprint('notifications', __name__)
+
+# ---------------------------------------------
+# Template filters
+# ---------------------------------------------
+def mini_md(value: str) -> Markup:
+    """Very small markdown: supports **bold** and __bold__ while escaping HTML.
+
+    Keeps the text safe by escaping first, then re-introducing <strong> tags.
+    """
+    if not value:
+        return Markup("")
+    safe_text = escape(value)
+    # Bold with **text**
+    safe_text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\\1</strong>", safe_text)
+    # Bold with __text__
+    safe_text = re.sub(r"__(.+?)__", r"<strong>\\1</strong>", safe_text)
+    return Markup(safe_text)
+
+app.jinja_env.filters['mini_md'] = mini_md
 
 def get_current_user():
     user_id = session.get('user_id')
@@ -1583,6 +1607,875 @@ def admin_providers():
                          selected_city=selected_city,
                          categories=categories,
                          all_cities=all_cities,new_categories=new_categories)
+
+# ---------------------------------------------
+# Admin: Find/select Google Place for a provider
+# ---------------------------------------------
+@app.route('/admin/providers/<int:provider_id>/google/find', methods=['GET', 'POST'])
+@admin_required
+def admin_provider_google_find(provider_id: int):
+    import requests
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    provider = ServiceProvider.query.get_or_404(provider_id)
+    query = request.values.get('q')
+    candidates = []
+    error = None
+
+    def map_category_to_type(cat: str) -> str:
+        c = (cat or '').lower()
+        if 'electric' in c:
+            return 'electrician'
+        if 'plumb' in c:
+            return 'plumber'
+        if 'hvac' in c or 'heating' in c or 'cooling' in c:
+            return 'hvac_contractor'
+        if 'roof' in c:
+            return 'roofing_contractor'
+        if 'lock' in c:
+            return 'locksmith'
+        return 'establishment'
+
+    if request.method in ['POST'] and api_key:
+        try:
+            text = query.strip() if query else f"{provider.name} {provider.full_address()}"
+
+            # Choose a location bias by city (Toronto/Barrie defaults)
+            city_lower = (provider.city or '').lower()
+            loc = None
+            if 'toronto' in city_lower or 'scarborough' in city_lower or 'north york' in city_lower or 'etobicoke' in city_lower or 'east york' in city_lower:
+                loc = (43.6532, -79.3832)
+            elif 'barrie' in city_lower:
+                loc = (44.3894, -79.6903)
+
+            # 1) Find Place (with optional location bias)
+            fp_base = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
+            fp_params = {
+                'input': text,
+                'inputtype': 'textquery',
+                'fields': 'place_id,name,formatted_address,rating,user_ratings_total',
+                'key': api_key,
+                'region': 'ca',
+            }
+            if loc:
+                fp_params['locationbias'] = f"circle:50000@{loc[0]},{loc[1]}"
+            r = requests.get(fp_base, params=fp_params, timeout=12)
+            r.raise_for_status()
+            data = r.json() or {}
+            cands = data.get('candidates') or []
+            for c in cands:
+                candidates.append({
+                    'place_id': c.get('place_id'),
+                    'name': c.get('name'),
+                    'formatted_address': c.get('formatted_address'),
+                    'rating': c.get('rating'),
+                    'user_ratings_total': c.get('user_ratings_total'),
+                })
+            # 2) Text Search fallback(s)
+            if len(candidates) < 5:
+                ts_base = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
+                ts_params = {
+                    'query': text,
+                    'key': api_key,
+                    'region': 'ca',
+                    'type': map_category_to_type(provider.service_category),
+                }
+                if loc:
+                    ts_params['location'] = f"{loc[0]},{loc[1]}"
+                    ts_params['radius'] = '80000'
+                r2 = requests.get(ts_base, params=ts_params, timeout=12)
+                r2.raise_for_status()
+                d2 = r2.json() or {}
+                for c in (d2.get('results') or [])[:5]:
+                    candidates.append({
+                        'place_id': c.get('place_id'),
+                        'name': c.get('name'),
+                        'formatted_address': c.get('formatted_address'),
+                        'rating': c.get('rating'),
+                        'user_ratings_total': c.get('user_ratings_total'),
+                    })
+
+            # 3) Alternate queries if still empty or weak
+            def _push_textsearch(qtext: str):
+                try:
+                    p = {
+                        'query': qtext,
+                        'key': api_key,
+                        'region': 'ca',
+                        'type': map_category_to_type(provider.service_category),
+                    }
+                    if loc:
+                        p['location'] = f"{loc[0]},{loc[1]}"
+                        p['radius'] = '80000'
+                    rr = requests.get(ts_base, params=p, timeout=12)
+                    if rr.ok:
+                        dd = rr.json() or {}
+                        for c in (dd.get('results') or [])[:5]:
+                            candidates.append({
+                                'place_id': c.get('place_id'),
+                                'name': c.get('name'),
+                                'formatted_address': c.get('formatted_address'),
+                                'rating': c.get('rating'),
+                                'user_ratings_total': c.get('user_ratings_total'),
+                            })
+                except Exception:
+                    pass
+
+            if len(candidates) == 0:
+                # Name + city
+                if provider.city:
+                    _push_textsearch(f"{provider.name} {provider.city} Ontario")
+                # Name only with Ontario
+                _push_textsearch(f"{provider.name} Ontario")
+                # Try stripping Inc/Ltd punctuation
+                simple_name = (provider.name or '').replace('Inc', '').replace('Ltd', '').strip()
+                if simple_name and simple_name != provider.name:
+                    if provider.city:
+                        _push_textsearch(f"{simple_name} {provider.city} Ontario")
+                    _push_textsearch(f"{simple_name} Ontario")
+            # De-dup by place_id
+            seen = set()
+            uniq = []
+            for c in candidates:
+                pid = c.get('place_id')
+                if pid and pid not in seen:
+                    seen.add(pid)
+                    uniq.append(c)
+            candidates = uniq
+        except Exception as e:
+            error = str(e)
+
+        # Auto-select the best candidate and update provider immediately
+        if candidates:
+            def get_details(pid: str):
+                base = 'https://maps.googleapis.com/maps/api/place/details/json'
+                params = {
+                    'place_id': pid,
+                    'fields': 'name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total',
+                    'key': api_key,
+                    'region': 'ca',
+                }
+                try:
+                    rr = requests.get(base, params=params, timeout=12)
+                    rr.raise_for_status()
+                    return (rr.json() or {}).get('result') or {}
+                except Exception:
+                    return {}
+
+            # Choose candidate with most reviews; fallback to first
+            best = sorted(
+                candidates,
+                key=lambda c: (c.get('user_ratings_total') or 0, c.get('rating') or 0),
+                reverse=True,
+            )[0]
+            place_id = best.get('place_id')
+            if place_id:
+                details = get_details(place_id)
+                if details:
+                    provider.google_place_id = place_id
+                    if details.get('rating') is not None:
+                        try:
+                            provider.star_rating = float(details.get('rating'))
+                        except Exception:
+                            pass
+                    if details.get('user_ratings_total') is not None:
+                        try:
+                            provider.review_count = int(details.get('user_ratings_total'))
+                        except Exception:
+                            pass
+                    phone = details.get('formatted_phone_number') or details.get('international_phone_number')
+                    if phone:
+                        provider.phone = phone
+                    website = details.get('website')
+                    if website:
+                        provider.website = website
+                        # Best-effort email extraction only if empty
+                        if not provider.email:
+                            try:
+                                import re
+                                resp = requests.get(website, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+                                if resp.status_code == 200 and resp.text:
+                                    html_txt = resp.text
+                                    m = re.search(r"mailto:([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", html_txt, re.IGNORECASE)
+                                    if not m:
+                                        m = re.search(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,})", html_txt, re.IGNORECASE)
+                                    if m:
+                                        provider.email = m.group(1)
+                            except Exception:
+                                pass
+                    try:
+                        db.session.commit()
+                        flash('Provider updated from Google successfully.', 'success')
+                        return redirect(url_for('admin_providers', city=provider.city))
+                    except Exception as e:
+                        db.session.rollback()
+                        error = f'Failed saving provider: {e}'
+
+    if not query:
+        query = f"{provider.name} {provider.full_address()}"
+
+    return render_template('admin_provider_google_find.html', provider=provider, query=query, candidates=candidates, error=error)
+
+
+@app.route('/admin/providers/<int:provider_id>/google/select', methods=['POST'])
+@admin_required
+def admin_provider_google_select(provider_id: int):
+    import requests, re
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    provider = ServiceProvider.query.get_or_404(provider_id)
+    place_id = request.form.get('place_id')
+    if not api_key or not place_id:
+        flash('Missing Google API key or place id', 'danger')
+        return redirect(url_for('admin_providers', city=provider.city))
+
+    def get_details(pid: str):
+        base = 'https://maps.googleapis.com/maps/api/place/details/json'
+        params = {
+            'place_id': pid,
+            'fields': 'name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        try:
+            r = requests.get(base, params=params, timeout=12)
+            r.raise_for_status()
+            return (r.json() or {}).get('result') or {}
+        except Exception:
+            return {}
+
+    def try_extract_email(site_url: str):
+        if not site_url:
+            return None
+        try:
+            resp = requests.get(site_url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            if resp.status_code != 200:
+                return None
+            html = resp.text or ''
+            m = re.search(r"mailto:([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", html, re.IGNORECASE)
+            if m:
+                return m.group(1)
+            m2 = re.search(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", html, re.IGNORECASE)
+            if m2:
+                return m2.group(1)
+        except Exception:
+            return None
+        return None
+
+    details = get_details(place_id)
+    if not details:
+        flash('No details returned for selected place', 'danger')
+        return redirect(url_for('admin_providers', city=provider.city))
+
+    provider.google_place_id = place_id
+    rating = details.get('rating')
+    total = details.get('user_ratings_total')
+    if rating is not None:
+        try:
+            provider.star_rating = float(rating)
+        except Exception:
+            pass
+    if total is not None:
+        try:
+            provider.review_count = int(total)
+        except Exception:
+            pass
+    phone = details.get('formatted_phone_number') or details.get('international_phone_number')
+    if phone:
+        provider.phone = phone
+    website = details.get('website')
+    if website:
+        provider.website = website
+        if not provider.email:
+            found_email = try_extract_email(website)
+            if found_email:
+                provider.email = found_email
+
+    try:
+        db.session.commit()
+        flash('Provider updated from Google successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to save provider updates: {e}', 'danger')
+
+    return redirect(url_for('admin_providers', city=provider.city))
+
+
+# Helper: Auto-select Google Place for a provider by name/query (API key or admin session)
+@app.route('/admin/providers/google/autoselect', methods=['POST'])
+def admin_providers_google_autoselect():
+    # Allow if admin session OR valid API key provided
+    expected = os.getenv("EXPECTED_API_KEY", EXPECTED_API_KEY)
+    provided = request.args.get('key') or request.form.get('key')
+    if 'admin_logged_in' not in session and (not expected or provided != expected):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    import requests, re
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'error': 'GOOGLE_MAPS_API_KEY not set'}), 400
+
+    name = (request.form.get('name') or '').strip()
+    city_hint = (request.form.get('city') or '').strip()
+    query = (request.form.get('q') or '').strip()
+    if not name:
+        return jsonify({'success': False, 'error': 'Missing provider name'}), 400
+
+    # Find provider by name (and optional city)
+    qprov = ServiceProvider.query.filter(func.lower(ServiceProvider.name).like(f"%{name.lower()}%"))
+    if city_hint:
+        qprov = qprov.filter(func.lower(ServiceProvider.city) == city_hint.lower())
+    provider = qprov.order_by(ServiceProvider.id.desc()).first()
+    if not provider:
+        return jsonify({'success': False, 'error': 'Provider not found'}), 404
+
+    def _find_candidates(search_text: str):
+        cands = []
+        # Find Place
+        fp_base = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
+        fp_params = {
+            'input': search_text,
+            'inputtype': 'textquery',
+            'fields': 'place_id,name,formatted_address,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        r = requests.get(fp_base, params=fp_params, timeout=12)
+        if r.ok:
+            data = r.json() or {}
+            for c in (data.get('candidates') or []):
+                cands.append(c)
+        # Text Search fallback
+        ts_base = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
+        ts_params = {
+            'query': search_text,
+            'key': api_key,
+            'region': 'ca',
+        }
+        r2 = requests.get(ts_base, params=ts_params, timeout=12)
+        if r2.ok:
+            data2 = r2.json() or {}
+            for c in (data2.get('results') or [])[:5]:
+                cands.append(c)
+        # De-dup by place_id
+        uniq = []
+        seen = set()
+        for c in cands:
+            pid = c.get('place_id')
+            if pid and pid not in seen:
+                seen.add(pid)
+                uniq.append(c)
+        return uniq
+
+    def _get_details(pid: str):
+        base = 'https://maps.googleapis.com/maps/api/place/details/json'
+        params = {
+            'place_id': pid,
+            'fields': 'name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        r = requests.get(base, params=params, timeout=12)
+        if r.ok:
+            return (r.json() or {}).get('result') or {}
+        return {}
+
+    def _try_extract_email(site_url: str):
+        if not site_url:
+            return None
+        try:
+            resp = requests.get(site_url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            if resp.status_code != 200:
+                return None
+            html = resp.text or ''
+            m = re.search(r"mailto:([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", html, re.IGNORECASE)
+            if m:
+                return m.group(1)
+            m2 = re.search(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", html, re.IGNORECASE)
+            if m2:
+                return m2.group(1)
+        except Exception:
+            return None
+        return None
+
+    search_text = query or f"{provider.name} {provider.full_address()}"
+    candidates = _find_candidates(search_text)
+    if not candidates:
+        return jsonify({'success': False, 'error': 'No Google candidates found'}), 404
+
+    best = candidates[0]
+    pid = best.get('place_id')
+    details = _get_details(pid) if pid else {}
+    if not details:
+        return jsonify({'success': False, 'error': 'No details for candidate'}), 404
+
+    # Update provider
+    provider.google_place_id = pid
+    if details.get('rating') is not None:
+        try:
+            provider.star_rating = float(details.get('rating'))
+        except Exception:
+            pass
+    if details.get('user_ratings_total') is not None:
+        try:
+            provider.review_count = int(details.get('user_ratings_total'))
+        except Exception:
+            pass
+    phone = details.get('formatted_phone_number') or details.get('international_phone_number')
+    if phone:
+        provider.phone = phone
+    website = details.get('website')
+    if website:
+        provider.website = website
+        if not provider.email:
+            em = _try_extract_email(website)
+            if em:
+                provider.email = em
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'DB save failed: {e}'}), 500
+
+    return jsonify({
+        'success': True,
+        'provider_id': provider.id,
+        'provider_name': provider.name,
+        'place_id': pid,
+        'selected': {
+            'name': details.get('name'),
+            'address': details.get('formatted_address'),
+            'rating': details.get('rating'),
+            'reviews': details.get('user_ratings_total'),
+            'phone': provider.phone,
+            'website': provider.website,
+            'email': provider.email,
+        }
+    })
+
+# ---------------------------------------------
+# Sync Google ratings/reviews for providers
+# ---------------------------------------------
+@app.route('/admin/providers/sync-ratings', methods=['POST'])
+@admin_required
+def admin_sync_provider_ratings():
+    """Fetch latest Google ratings and reviews for providers in a city/category.
+
+    Requires environment variable GOOGLE_MAPS_API_KEY.
+    """
+    target_city = request.form.get('city', '').strip()
+    target_category = request.form.get('category', '').strip()
+
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        flash('GOOGLE_MAPS_API_KEY not set. Please add it to your .env and restart.', 'danger')
+        return redirect(url_for('admin_providers', city=target_city or 'Toronto'))
+
+    # Select providers
+    q = ServiceProvider.query
+    if target_city:
+        q = q.filter(func.lower(ServiceProvider.city) == target_city.lower())
+    if target_category:
+        q = q.filter(ServiceProvider.service_category == target_category)
+    providers = q.filter(ServiceProvider.status == 'active').all()
+
+    import requests, time, re
+
+    updated = 0
+    skipped = 0  # kept for backward-compatible total
+    failed = 0
+    skipped_no_match = 0
+    skipped_unchanged = 0
+
+    # Optional city location bias (Toronto/Barrie for now)
+    city_bias = {
+        'toronto': {'lat': 43.6532, 'lng': -79.3832, 'radius': 50000},
+        'barrie': {'lat': 44.3894, 'lng': -79.6903, 'radius': 35000},
+    }
+    bias = city_bias.get((target_city or '').lower())
+
+    def _map_category_to_place_type(cat: str) -> str:
+        c = (cat or '').lower()
+        if 'electric' in c:
+            return 'electrician'
+        if 'plumb' in c:
+            return 'plumber'
+        if 'hvac' in c or 'heating' in c or 'cooling' in c:
+            return 'hvac_contractor'
+        if 'roof' in c:
+            return 'roofing_contractor'
+        if 'locksmith' in c:
+            return 'locksmith'
+        if 'pest' in c or 'exterminat' in c:
+            return 'pest_control_service'
+        if 'landscap' in c or 'lawn' in c or 'tree' in c:
+            return 'landscaper'
+        if 'clean' in c:
+            return 'house_cleaning_service'
+        return 'establishment'
+
+    def _find_rating_text(input_text: str):
+        base = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
+        params = {
+            'input': input_text,
+            'inputtype': 'textquery',
+            'fields': 'place_id,name,formatted_address,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        # Location bias toward selected city if available
+        if bias:
+            params['locationbias'] = f"circle:{bias['radius']}@{bias['lat']},{bias['lng']}"
+        try:
+            r = requests.get(base, params=params, timeout=12)
+            r.raise_for_status()
+            data = r.json() or {}
+            candidates = data.get('candidates') or []
+            if not candidates:
+                # Try with stronger country hint
+                params_alt = dict(params)
+                params_alt['input'] = f"{input_text} Ontario Canada"
+                r2 = requests.get(base, params=params_alt, timeout=12)
+                data2 = (r2.json() or {}) if r2.ok else {}
+                candidates = data2.get('candidates') or []
+                if not candidates:
+                    # Last attempt: no bias
+                    params_alt2 = dict(params_alt)
+                    params_alt2.pop('locationbias', None)
+                    r3 = requests.get(base, params=params_alt2, timeout=12)
+                    data3 = (r3.json() or {}) if r3.ok else {}
+                    candidates = data3.get('candidates') or []
+                    if not candidates:
+                        return None, None, None
+            best = candidates[0]
+            return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+        except Exception:
+            return None, None, None
+
+    def _text_search(query: str, place_type: str = 'establishment'):
+        """Fallback to Places Text Search to find a place id, rating and reviews."""
+        base = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
+        params = {
+            'query': query,
+            'key': api_key,
+            'region': 'ca',
+            'type': place_type,
+        }
+        if bias:
+            params['location'] = f"{bias['lat']},{bias['lng']}"
+            params['radius'] = str(bias['radius'])
+        try:
+            # 1) with type + bias (if any)
+            r = requests.get(base, params=params, timeout=12)
+            data = r.json() or {}
+            results = data.get('results') or []
+            if results:
+                best = results[0]
+                return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+
+            # 2) without type
+            p2 = dict(params)
+            p2.pop('type', None)
+            r2 = requests.get(base, params=p2, timeout=12)
+            data2 = (r2.json() or {}) if r2.ok else {}
+            results2 = data2.get('results') or []
+            if results2:
+                best = results2[0]
+                return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+
+            # 3) without bias
+            p3 = dict(p2)
+            p3.pop('location', None)
+            p3.pop('radius', None)
+            r3 = requests.get(base, params=p3, timeout=12)
+            data3 = (r3.json() or {}) if r3.ok else {}
+            results3 = data3.get('results') or []
+            if results3:
+                best = results3[0]
+                return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+
+            # 4) add Canada hint
+            p4 = dict(p3)
+            p4['query'] = f"{query} Ontario Canada"
+            r4 = requests.get(base, params=p4, timeout=12)
+            data4 = (r4.json() or {}) if r4.ok else {}
+            results4 = data4.get('results') or []
+            if results4:
+                best = results4[0]
+                return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+
+            return None, None, None
+        except Exception:
+            return None, None, None
+
+    def _digits_only(phone: str) -> str:
+        return re.sub(r'\D+', '', phone or '')
+
+    def _find_rating_phone(phone: str):
+        phone_digits = _digits_only(phone)
+        if not phone_digits:
+            return None, None, None
+        base = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
+        params = {
+            'input': phone_digits,
+            'inputtype': 'phonenumber',
+            'fields': 'place_id,name,formatted_address,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        try:
+            r = requests.get(base, params=params, timeout=12)
+            r.raise_for_status()
+            data = r.json() or {}
+            candidates = data.get('candidates') or []
+            if not candidates:
+                return None, None, None
+            best = candidates[0]
+            return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+        except Exception:
+            return None, None, None
+
+    def _get_place_details(place_id: str):
+        if not place_id:
+            return {}
+        base = 'https://maps.googleapis.com/maps/api/place/details/json'
+        params = {
+            'place_id': place_id,
+            'fields': 'formatted_phone_number,international_phone_number,website,rating,user_ratings_total',
+            'key': api_key,
+            'region': 'ca',
+        }
+        try:
+            r = requests.get(base, params=params, timeout=12)
+            r.raise_for_status()
+            data = r.json() or {}
+            return (data.get('result') or {})
+        except Exception:
+            return {}
+
+    def _extract_email_from_website(url: str):
+        if not url:
+            return None
+        try:
+            resp = requests.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0 (compatible; ConnectYouBot/1.0)'} )
+            text = resp.text or ''
+            # Prefer mailto if present
+            m = re.search(r'mailto:([^"\?\s]+)', text, re.IGNORECASE)
+            if m:
+                return m.group(1).strip()
+            # Fallback: raw email pattern
+            m2 = re.search(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', text, re.IGNORECASE)
+            if m2:
+                return m2.group(0).strip()
+        except Exception:
+            return None
+        return None
+
+    def _geocode(address: str):
+        if not address:
+            return None, None
+        base = 'https://maps.googleapis.com/maps/api/geocode/json'
+        params = {
+            'address': address,
+            'key': api_key,
+            'region': 'ca',
+        }
+        try:
+            r = requests.get(base, params=params, timeout=12)
+            r.raise_for_status()
+            data = r.json() or {}
+            results = data.get('results') or []
+            if not results:
+                return None, None
+            loc = results[0].get('geometry', {}).get('location') or {}
+            return loc.get('lat'), loc.get('lng')
+        except Exception:
+            return None, None
+
+    def _nearby_search(lat: float, lng: float, keyword: str, place_type: str = 'establishment'):
+        if lat is None or lng is None or not keyword:
+            return None, None, None
+        base = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+        # Try progressively wider searches
+        attempts = [
+            {'radius': 3000, 'type': place_type},
+            {'radius': 8000, 'type': place_type},
+            {'radius': 15000, 'type': None},
+        ]
+        for a in attempts:
+            params = {
+                'location': f"{lat},{lng}",
+                'radius': a['radius'],
+                'keyword': keyword,
+                'key': api_key,
+                'region': 'ca',
+            }
+            if a['type']:
+                params['type'] = a['type']
+            try:
+                r = requests.get(base, params=params, timeout=12)
+                r.raise_for_status()
+                data = r.json() or {}
+                results = data.get('results') or []
+                if results:
+                    best = results[0]
+                    return best.get('rating'), best.get('user_ratings_total'), best.get('place_id')
+            except Exception:
+                continue
+        return None, None, None
+
+    def _normalize_name_for_search(name: str) -> str:
+        if not name:
+            return ''
+        s = name.lower()
+        # Unify electric/electrical
+        s = s.replace('electrical', 'electric')
+        # Remove corporate suffixes
+        for token in [' inc', ' ltd', ' limited', ' corporation', ' corp', ' company', ' co ', ' solutions', ' services', ' service']:
+            s = s.replace(token, ' ')
+        # Collapse whitespace
+        s = ' '.join(s.split())
+        return s
+
+    def _name_variants(name: str) -> list:
+        base = _normalize_name_for_search(name)
+        pieces = base.split()
+        variants = []
+        if base:
+            variants.append(base)
+        # Try without first/last word
+        if len(pieces) > 1:
+            variants.append(' '.join(pieces[:-1]))
+            variants.append(' '.join(pieces[1:]))
+        # Try first keyword only (brand)
+        if pieces:
+            variants.append(pieces[0])
+        # Deduplicate while preserving order
+        seen = set()
+        uniq = []
+        for v in variants:
+            if v and v not in seen:
+                seen.add(v)
+                uniq.append(v)
+        return uniq
+
+    for p in providers:
+        # Compose address string
+        try:
+            address = p.full_address() if hasattr(p, 'full_address') else f"{p.business_address} {p.city} {p.province}"
+            place_type = _map_category_to_place_type(getattr(p, 'service_category', ''))
+            # Try multiple strategies to maximize match rate
+            rating, total, place_id = _find_rating_text(f"{p.name} {address}")
+            if rating is None and total is None:
+                rating, total, place_id = _find_rating_text(f"{p.name} {p.city} {p.province}")
+            if rating is None and total is None:
+                rating, total, place_id = _find_rating_text(f"{p.name} {p.city}")
+            if rating is None and total is None and getattr(p, 'phone', None):
+                rating, total, place_id = _find_rating_phone(p.phone)
+            # Text Search fallbacks if still not found
+            if rating is None and total is None:
+                rating, total, place_id = _text_search(f"{p.name} {address}", place_type)
+            if rating is None and total is None:
+                rating, total, place_id = _text_search(f"{p.name} {p.city} {p.province}", place_type)
+            if rating is None and total is None:
+                rating, total, place_id = _text_search(f"{p.name} {p.city} Ontario", place_type)
+            # If still missing rating but we have a place_id from text search, pull details for rating
+            if (rating is None or total is None) and place_id:
+                det = _get_place_details(place_id)
+                if det:
+                    if rating is None:
+                        rating = det.get('rating')
+                    if total is None:
+                        total = det.get('user_ratings_total')
+
+            # Geocode + nearby search around address if still not found
+            if rating is None and total is None:
+                full_addr = f"{p.business_address or ''} {p.city or ''} {getattr(p,'province','') or ''} {getattr(p,'postal_code','') or ''} Canada".strip()
+                g_lat, g_lng = _geocode(full_addr)
+                if g_lat is not None and g_lng is not None:
+                    # Try multiple name variants from most specific to shortest
+                    for key in _name_variants(p.name):
+                        rating, total, place_id = _nearby_search(g_lat, g_lng, key, place_type)
+                        if rating is not None or total is not None:
+                            break
+                    if (rating is None or total is None) and place_id:
+                        det2 = _get_place_details(place_id)
+                        if det2:
+                            if rating is None:
+                                rating = det2.get('rating')
+                            if total is None:
+                                total = det2.get('user_ratings_total')
+
+            if rating is None and total is None:
+                skipped += 1
+                skipped_no_match += 1
+                try:
+                    app.logger.info(f"Google sync: no match for provider '{p.name}' in {p.city}. Tried address and textsearch.")
+                except Exception:
+                    pass
+                time.sleep(0.18)
+                continue
+
+            # Only update if values present
+            changed = False
+            if isinstance(rating, (int, float)) and rating > 0:
+                p.star_rating = float(rating)
+                changed = True
+            if isinstance(total, int) and total >= 0:
+                p.review_count = int(total)
+                changed = True
+            # Enrich with details: phone/website -> try to extract email from website
+            details = _get_place_details(place_id)
+            if details:
+                # Prefer ratings from Details API when available (often fresher)
+                d_rating = details.get('rating')
+                d_total = details.get('user_ratings_total')
+                if isinstance(d_rating, (int, float)) and d_rating > 0 and float(d_rating) != p.star_rating:
+                    p.star_rating = float(d_rating)
+                    changed = True
+                if isinstance(d_total, int) and d_total >= 0 and int(d_total) != p.review_count:
+                    p.review_count = int(d_total)
+                    changed = True
+                new_phone = details.get('formatted_phone_number') or details.get('international_phone_number')
+                if new_phone and new_phone.strip() and new_phone.strip() != (p.phone or '').strip():
+                    p.phone = new_phone.strip()
+                    changed = True
+                website = details.get('website')
+                if website and website.strip():
+                    # Save website if we have a column
+                    if hasattr(p, 'website') and (not p.website or p.website.strip() != website.strip()):
+                        p.website = website.strip()
+                        changed = True
+                    # Extract email from website if we don't already have one
+                    if not p.email:
+                        found_email = _extract_email_from_website(website.strip())
+                        if found_email and found_email.strip():
+                            p.email = found_email.strip()
+                            changed = True
+            if changed:
+                db.session.add(p)
+                updated += 1
+            else:
+                skipped += 1
+                skipped_unchanged += 1
+        except Exception:
+            failed += 1
+        finally:
+            # Gentle rate limiting
+            time.sleep(0.18)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash('Database error while saving some updates.', 'danger')
+        return redirect(url_for('admin_providers', city=target_city or 'Toronto'))
+
+    msg = (
+        f"Google sync complete: updated {updated}, unchanged {skipped_unchanged}, "
+        f"no match {skipped_no_match}, failed {failed}."
+    )
+    flash(msg, 'success' if failed == 0 else ('warning' if updated else 'danger'))
+    return redirect(url_for('admin_providers', city=target_city or 'Toronto'))
 
 @app.route('/admin/providers/add', methods=['GET', 'POST'])
 @admin_required
@@ -4015,3 +4908,322 @@ def test_phone_simple():
     </script>
 </body>
 </html>"""
+
+# ---------------------------------------------
+# Interaction Logs (Admin)
+# ---------------------------------------------
+
+def _allowed_upload(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {
+        'png', 'jpg', 'jpeg', 'gif', 'pdf', 'txt', 'doc', 'docx'
+    }
+
+
+@app.route('/admin/interactions')
+@admin_required
+def admin_list_interactions():
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=20, type=int)
+    pagination = InteractionLog.query.order_by(InteractionLog.occurred_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('admin_interactions.html', pagination=pagination, items=pagination.items)
+
+
+@app.route('/admin/interactions/new', methods=['GET', 'POST'])
+@admin_required
+def admin_new_interaction():
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        author_name = request.form.get('author_name', '').strip()
+        client_phone = request.form.get('client_phone', '').strip()
+        client_email = request.form.get('client_email', '').strip()
+        client_address = request.form.get('client_address', '').strip()
+        service_city = request.form.get('service_city', '').strip()
+        service_needed = request.form.get('service_needed', '').strip()
+        referral_source = request.form.get('referral_source', '').strip()
+        occurred_at_str = request.form.get('occurred_at')
+
+        if not title:
+            flash('Title is required', 'danger')
+            return redirect(url_for('admin_new_interaction'))
+
+        occurred_at = None
+        try:
+            if occurred_at_str:
+                occurred_at = datetime.fromisoformat(occurred_at_str)
+        except Exception:
+            occurred_at = None
+
+        log_entry = InteractionLog(
+            title=title,
+            description=description,
+            author_name=author_name or None,
+            client_phone=client_phone or None,
+            client_email=client_email or None,
+            client_address=client_address or None,
+            service_city=service_city or None,
+            service_needed=service_needed or None,
+            referral_source=referral_source or None,
+            occurred_at=occurred_at or datetime.utcnow()
+        )
+        db.session.add(log_entry)
+        db.session.flush()
+
+        files = request.files.getlist('attachments')
+        for file in files or []:
+            if not file or file.filename == '':
+                continue
+            filename = secure_filename(file.filename)
+            if not filename:
+                continue
+            base_dir = os.path.join(BASE_DIR, 'static', 'uploads', 'interaction_logs', str(log_entry.id))
+            os.makedirs(base_dir, exist_ok=True)
+            save_path = os.path.join(base_dir, filename)
+            file.save(save_path)
+
+            attach = InteractionAttachment(
+                log_id=log_entry.id,
+                file_path=os.path.relpath(save_path, BASE_DIR),
+                original_filename=filename
+            )
+            db.session.add(attach)
+
+        db.session.commit()
+        flash('Interaction log saved', 'success')
+        return redirect(url_for('admin_list_interactions'))
+
+    default_dt = datetime.utcnow().strftime('%Y-%m-%dT%H:%M')
+    return render_template('admin_new_interaction.html', default_dt=default_dt)
+
+
+@app.route('/admin/interactions/<int:log_id>')
+@admin_required
+def admin_interaction_detail(log_id: int):
+    log = InteractionLog.query.get_or_404(log_id)
+    return render_template('admin_interaction_detail.html', log=log)
+
+
+@app.route('/admin/interactions/<int:log_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_interaction(log_id: int):
+    log = InteractionLog.query.get_or_404(log_id)
+    if request.method == 'POST':
+        log.title = request.form.get('title', '').strip() or log.title
+        log.description = request.form.get('description', '').strip()
+        log.author_name = request.form.get('author_name', '').strip()
+        log.client_phone = request.form.get('client_phone', '').strip()
+        log.client_email = request.form.get('client_email', '').strip()
+        log.client_address = request.form.get('client_address', '').strip()
+        log.service_city = request.form.get('service_city', '').strip()
+        log.service_needed = request.form.get('service_needed', '').strip()
+        log.referral_source = request.form.get('referral_source', '').strip()
+
+        occurred_at_str = request.form.get('occurred_at')
+        try:
+            if occurred_at_str:
+                log.occurred_at = datetime.fromisoformat(occurred_at_str)
+        except Exception:
+            pass
+
+        files = request.files.getlist('attachments')
+        for file in files or []:
+            if not file or file.filename == '':
+                continue
+            filename = secure_filename(file.filename)
+            if not filename:
+                continue
+            base_dir = os.path.join(BASE_DIR, 'static', 'uploads', 'interaction_logs', str(log.id))
+            os.makedirs(base_dir, exist_ok=True)
+            save_path = os.path.join(base_dir, filename)
+            file.save(save_path)
+            attach = InteractionAttachment(
+                log_id=log.id,
+                file_path=os.path.relpath(save_path, BASE_DIR),
+                original_filename=filename
+            )
+            db.session.add(attach)
+
+        db.session.commit()
+        flash('Interaction log updated', 'success')
+        return redirect(url_for('admin_interaction_detail', log_id=log.id))
+
+    default_dt = (log.occurred_at or datetime.utcnow()).strftime('%Y-%m-%dT%H:%M')
+    return render_template('admin_edit_interaction.html', log=log, default_dt=default_dt)
+
+
+@app.route('/admin/interactions/<int:log_id>/status', methods=['POST'])
+@admin_required
+def admin_update_interaction_status(log_id: int):
+    log = InteractionLog.query.get_or_404(log_id)
+    new_status = request.form.get('status')
+    note = request.form.get('status_note', '').strip()
+    if new_status in ['complete', 'incomplete']:
+        log.status = new_status
+        log.status_note = note or None
+        db.session.commit()
+        flash('Status updated', 'success')
+    else:
+        flash('Invalid status', 'danger')
+    return redirect(url_for('admin_interaction_detail', log_id=log.id))
+
+
+@app.route('/admin/interactions/<int:log_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_interaction(log_id: int):
+    log = InteractionLog.query.get_or_404(log_id)
+    # Remove any uploaded files for this log
+    try:
+        import shutil
+        upload_dir = os.path.join(BASE_DIR, 'static', 'uploads', 'interaction_logs', str(log.id))
+        if os.path.isdir(upload_dir):
+            shutil.rmtree(upload_dir, ignore_errors=True)
+    except Exception:
+        pass
+
+    db.session.delete(log)
+    db.session.commit()
+    flash('Interaction log deleted', 'success')
+    return redirect(url_for('admin_list_interactions'))
+
+
+# ---------------------------------------------
+# Bulk email providers (Admin)
+# ---------------------------------------------
+@app.route('/admin/email', methods=['GET', 'POST'])
+@admin_required
+def admin_email_providers():
+    # Load providers list
+    all_providers = ServiceProvider.query.order_by(ServiceProvider.city, ServiceProvider.service_category, ServiceProvider.name).all()
+    # Filter options
+    cities = sorted({p.city for p in all_providers if getattr(p, 'city', None)})
+    categories = sorted({p.service_category for p in all_providers if getattr(p, 'service_category', None)})
+    # Selected filters
+    selected_city = request.args.get('city', '').strip()
+    selected_category = request.args.get('category', '').strip()
+    # Apply filters
+    providers = all_providers
+    if selected_city:
+        providers = [p for p in providers if (p.city or '') == selected_city]
+    if selected_category:
+        providers = [p for p in providers if (p.service_category or '') == selected_category]
+
+    if request.method == 'POST':
+        # Selected provider IDs and manual emails
+        ids = request.form.getlist('provider_ids')
+        manual_emails = request.form.get('manual_emails', '').strip()
+        subject = request.form.get('subject', '').strip()
+        body = request.form.get('body', '').strip()
+
+        # Build recipient list
+        recipients = []
+        if ids:
+            selected = ServiceProvider.query.filter(ServiceProvider.id.in_(ids)).all()
+            for p in selected:
+                if p.email:
+                    recipients.append(p.email)
+        if manual_emails:
+            for token in manual_emails.replace(';', ',').split(','):
+                email = token.strip()
+                # quick sanity: must contain '@' and a dot after it
+                if email and '@' in email and email.rsplit('@', 1)[-1].find('.') != -1:
+                    recipients.append(email)
+
+        # De-duplicate
+        recipients = sorted(set(recipients))
+
+        # Collect attachments
+        files = request.files.getlist('attachments')
+        attachment_payloads = []
+        for f in files or []:
+            if not f or f.filename == '':
+                continue
+            attachment_payloads.append((f.filename, f.read()))
+
+        # Send individually to each recipient for privacy
+        results = []
+        for rcpt in recipients:
+            ok = False
+            error_message = None
+            try:
+                ok = send_smtp_email(
+                    subject=subject or '(no subject)',
+                    body=body or '',
+                    recipients=[rcpt],
+                    attachments=attachment_payloads
+                )
+            except Exception as e:
+                ok = False
+                error_message = str(e)
+
+            # Log each send separately
+            try:
+                log_entry = EmailLog(
+                    subject=subject or '(no subject)',
+                    body=body or '',
+                    recipients=rcpt,
+                    attachments=", ".join([fn for fn,_ in attachment_payloads]) if attachment_payloads else None,
+                    status='sent' if ok else 'failed',
+                    error=error_message
+                )
+                db.session.add(log_entry)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+            results.append(ok)
+
+        if not recipients:
+            flash('No valid recipients selected or entered.', 'warning')
+        else:
+            sent = sum(1 for r in results if r)
+            failed = len(results) - sent
+            if failed == 0:
+                flash(f'Email sent to {sent} recipient(s) individually.', 'success')
+            elif sent > 0:
+                flash(f'Sent {sent}, failed {failed}. Each email was sent individually.', 'warning')
+            else:
+                flash(f'All {failed} sends failed.', 'danger')
+
+        params = {}
+        if 'selected_city' in locals() and selected_city:
+            params['city'] = selected_city
+        if 'selected_category' in locals() and selected_category:
+            params['category'] = selected_category
+        return redirect(url_for('admin_email_providers', **params))
+
+    return render_template(
+        'admin_email.html',
+        providers=providers,
+        cities=cities,
+        categories=categories,
+        selected_city=selected_city,
+        selected_category=selected_category,
+    )
+
+
+@app.route('/admin/email-logs')
+@admin_required
+def admin_email_logs():
+    logs = EmailLog.query.order_by(EmailLog.created_at.desc()).limit(200).all()
+    return render_template('admin_email_logs.html', logs=logs)
+
+
+@app.route('/admin/email-logs/<int:log_id>')
+@admin_required
+def admin_email_log_detail(log_id: int):
+    log = EmailLog.query.get_or_404(log_id)
+    return render_template('admin_email_log_detail.html', log=log)
+
+
+@app.route('/admin/email-logs/<int:log_id>/delete', methods=['POST'])
+@admin_required
+def admin_email_log_delete(log_id: int):
+    log = EmailLog.query.get_or_404(log_id)
+    try:
+        db.session.delete(log)
+        db.session.commit()
+        flash('Email log deleted', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to delete log: {e}', 'danger')
+    return redirect(url_for('admin_email_logs'))

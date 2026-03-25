@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid my-4">
+  <style>
+    /* Match Interaction Logs layout */
+    main.container { max-width: 1280px; width: 100%; }
+    .wide-card { max-width: 1200px; width: 100%; margin: 0 auto; }
+    .wide-card .card { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 24px rgba(0,0,0,0.35); border-radius: 14px; }
+    .wide-card .table th, .wide-card .table td { vertical-align: middle; }
+    .wide-card .table thead th { white-space: nowrap; }
+    /* Email Logs specific polish */
+    .table { table-layout: fixed; }
+    .table td, .table th { white-space: normal; word-break: break-word; }
+    .table-responsive { overflow-x: visible !important; }
+    .table thead th { position: sticky; top: 0; background: #1f2733; z-index: 2; }
+    .badge-status { padding: 0.45rem 0.6rem; font-weight: 600; }
+    .chip { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 999px; background: #2d3646; color: #c9d1d9; font-size: 0.8rem; margin: 0 0.25rem 0.25rem 0; }
+  </style>
+  <div class="d-flex justify-content-between align-items-center mb-3 wide-card">
+    <h2 class="text-white mb-0">Email Logs</h2>
+    <div>
+      <a class="btn btn-outline-secondary me-2" href="/reports">Back to Admin</a>
+      <a class="btn btn-primary" href="{{ url_for('admin_email_logs') }}">Refresh</a>
+    </div>
+  </div>
+
+  <div class="wide-card">
+    <div class="card bg-dark text-white">
+      <div class="card-body">
+        {% if logs %}
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width:220px;">When</th>
+                <th>Subject</th>
+                <th>Recipients</th>
+                <th style="width:180px;">Attachments</th>
+                <th style="width:140px;">Status</th>
+                <th>Error</th>
+                <th style="width:220px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in logs %}
+              <tr>
+                <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ log.subject }}</td>
+                <td class="small recipients">
+                  {% set recs = (log.recipients or '').split(',') %}
+                  {% set shown = recs[:2] %}
+                  <span>{{ shown|join(', ') }}</span>
+                  {% if recs|length > 2 %}
+                    <span id="more-{{ log.id }}" class="d-none">, {{ (recs[2:]|join(', ')) }}</span>
+                    <a href="#" class="toggle" data-target="more-{{ log.id }}" data-state="hidden">Show more</a>
+                  {% endif %}
+                </td>
+                <td class="small">
+                  {% if log.attachments %}
+                    {% for f in log.attachments.split(',') %}
+                      {% if f.strip() %}<span class="chip">{{ f.strip() }}</span>{% endif %}
+                    {% endfor %}
+                  {% else %}-{% endif %}
+                </td>
+                <td>
+                  <span class="badge badge-status {% if log.status=='sent' %}bg-success{% else %}bg-danger{% endif %}">{{ log.status|capitalize }}</span>
+                </td>
+                <td class="small">{{ log.error or '-' }}</td>
+                <td class="text-end">
+                  <a href="{{ url_for('admin_email_log_detail', log_id=log.id) }}" class="btn btn-sm btn-outline-info me-2">View</a>
+                  <form method="post" action="{{ url_for('admin_email_log_delete', log_id=log.id) }}" style="display:inline;" onsubmit="return confirm('Delete this email log?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <p class="text-muted mb-0">No logs yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.recipients .toggle').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      var id = btn.getAttribute('data-target');
+      var el = document.getElementById(id);
+      if (!el) return;
+      var hidden = btn.getAttribute('data-state') !== 'shown';
+      el.classList.toggle('d-none');
+      btn.textContent = hidden ? 'Show less' : 'Show more';
+      btn.setAttribute('data-state', hidden ? 'shown' : 'hidden');
+    });
+  });
+</script>
+{% endblock %}

@@ -155,35 +155,21 @@
 
         <!-- Navigation -->
       <div class="mb-4">
-    <a href="/" class="btn-back me-3">
-        <i class="fas fa-home me-2"></i>Home
-    </a>
-    <a href="/analytics" class="btn-back me-3">
-        <i class="fas fa-chart-bar me-2"></i>Analytics
-    </a>
-    <a href="/admin/download_analytics" class="btn-back me-3">
-        <i class="fas fa-download me-2"></i>Download Analytics
-    </a>
-    <a href="/admin/providers" class="btn-back me-3">
-        <i class="fas fa-users-cog me-2"></i>Providers
-    </a>
-    <a href="/admin/advertisements" class="btn-back me-3">
-        <i class="fas fa-ad me-2"></i>Advertisements
-    </a>
-    <a href="/admin/cities" class="btn-back me-3">
-        <i class="fas fa-map-marker-alt me-2"></i>Cities
-    </a>
-    <a href="/admin/waiting_list" class="btn-back me-3">
-        <i class="fas fa-clock me-2"></i>Waiting List
-    </a>
-    <a href="/admin/chat-conversations" class="btn-back me-3">
-        <i class="fas fa-comments me-2"></i>Chat Management
-    </a>
-    <br/>
-    <a href="/admin/notifications" class="btn-back">
-        <i class="fas fa-clock me-2"></i>Notification List
-    </a>
-</div>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="/" class="btn-back"><i class="fas fa-home me-2"></i>Home</a>
+          <a href="/analytics" class="btn-back"><i class="fas fa-chart-bar me-2"></i>Analytics</a>
+          <a href="/admin/download_analytics" class="btn-back"><i class="fas fa-download me-2"></i>Download Analytics</a>
+          <a href="/admin/providers" class="btn-back"><i class="fas fa-users-cog me-2"></i>Providers</a>
+          <a href="/admin/advertisements" class="btn-back"><i class="fas fa-ad me-2"></i>Advertisements</a>
+          <a href="/admin/cities" class="btn-back"><i class="fas fa-map-marker-alt me-2"></i>Cities</a>
+          <a href="/admin/waiting_list" class="btn-back"><i class="fas fa-clock me-2"></i>Waiting List</a>
+          <a href="/admin/chat-conversations" class="btn-back"><i class="fas fa-comments me-2"></i>Chat Management</a>
+          <a href="/admin/interactions" class="btn-back"><i class="fas fa-book me-2"></i>Interaction Logs</a>
+          <a href="/admin/email" class="btn-back"><i class="fas fa-envelope me-2"></i>Email Providers</a>
+          <a href="/admin/notifications" class="btn-back"><i class="fas fa-clock me-2"></i>Notification List</a>
+          <a href="/admin/email-logs" class="btn-back"><i class="fas fa-envelope-open-text me-2"></i>Email Logs</a>
+        </div>
+      </div>
 
         <!-- Application Statistics Cards -->
         {% if stats.pending_applications or stats.approved_applications or stats.rejected_applications %}

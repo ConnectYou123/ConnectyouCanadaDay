@@ -16,7 +16,8 @@
   border: 1.5px solid rgba(99, 102, 241, 0.15);
   opacity: 0;
   transform: translateY(30px) scale(0.96);
-  transition: opacity 0.4s cubic-bezier(0.4, 1.4, 0.4, 1), transform 0.4s cubic-bezier(0.4, 1.4, 0.4, 1);
+  transition: opacity 0.4s cubic-bezier(0.4, 1.4, 0.4, 1),
+              transform 0.4s cubic-bezier(0.4, 1.4, 0.4, 1);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -184,7 +185,6 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
-  
 }
 
 .quick-reply {
@@ -199,7 +199,7 @@
   user-select: none;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15);
   transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-  white-space: nowrap;
+  
 }
 
 .quick-reply:hover,
@@ -258,6 +258,7 @@
   cursor: pointer;
   width: 46px;
   height: 46px;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -373,24 +374,104 @@
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 375px) {
+@media (max-width: 576px) {
   .chat-widget {
-    bottom: 12px;
-    right: 12px;
+    bottom: 8px; /* Further reduce distance from bottom */
+    right: 8px;  /* Further reduce distance from right */
   }
+
+  /* Chatbot Container: Make it even smaller */
   .chatbot-container {
-    width: 96vw;
-    height: 88vh;
-    left: 2vw;
-    right: 2vw;
-    bottom: 75px;
-    border-radius: 20px;
+    width: 260px; /* Reduced width */
+    height: 516px; /* Reduced height */
+    bottom: 55px;
+    right: 8px;
+    border-radius: 18px; /* Slightly smaller border-radius */
   }
+
+  /* Chat Header: Adjust padding and text size */
+  .chat-header {
+    padding: 12px 16px; /* Reduced padding */
+    gap: 10px;
+  }
+
+  .bot-avatar-header {
+    width: 40px; /* Smaller avatar */
+    height: 40px;
+  }
+
+  .chat-header-text h1 {
+    font-size: 1.1rem; /* Smaller header title */
+  }
+
+  .chat-header-text p {
+    font-size: 0.75rem; /* Smaller header subtitle */
+  }
+
+  /* Chat Messages Area: Reduced padding and smaller messages */
+  .chat-messages {
+    padding: 12px 16px; /* Reduced padding */
+  }
+
+  .message {
+    margin-bottom: 12px; /* Smaller margin between messages */
+  }
+
+  .message-content {
+    padding: 10px 14px; /* Reduced padding within message bubbles */
+    font-size: 0.85rem; /* Smaller message text */
+    border-radius: 18px; /* Slightly smaller border-radius for bubbles */
+  }
+
+  /* Quick Replies: Smaller buttons */
+  .quick-replies {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .quick-reply {
+    padding: 6px 10px; /* Reduced padding for quick replies */
+    font-size: 0.75rem; /* Smaller text for quick replies */
+    border-radius: 20px; /* Slightly smaller border-radius */
+  }
+
+  /* Chat Input Area: Smaller input and send button */
+  .chat-input {
+    padding: 10px 12px; /* Reduced padding */
+    gap: 10px;
+  }
+
+  .input-field {
+    padding: 8px 12px; /* Reduced input field padding */
+    font-size: 0.85rem; /* Smaller input text */
+    border-radius: 24px; /* Slightly smaller border-radius */
+  }
+
+  .send-button {
+    width: 34px; /* Smaller send button */
+    height: 34px;
+    font-size: 18px; /* Smaller icon */
+    padding: 8px;
+  }
+
+  /* Typing Indicator: Smaller dots */
+  .typing-indicator {
+    padding: 10px 14px;
+    gap: 4px;
+  }
+
+  .typing-dot {
+    width: 8px; /* Smaller dots */
+    height: 8px;
+  }
+
+  /* Chat Toggle Button: Make it smaller and adjust position */
   .chat-toggle {
-    width: 54px;
-    height: 54px;
-    font-size: 22px;
-    right: calc(50vw - 27px);
+    width: 44px; /* Smaller toggle button */
+    height: 44px;
+    font-size: 18px; /* Smaller icon */
+    right: 12px; /* Adjusted position */
+    bottom: 12px;
   }
 }
 
@@ -406,4 +487,6 @@
   height: 6%;
   font-weight: 500;
   user-select: none;
+  font-size: 14px;
 }
+

@@ -8,7 +8,10 @@ from sqlalchemy import desc, func
 from app import app, db
 from chat_models import ChatConversation, ChatMessage
 from chat_manager import ChatManager
+import os
+from mailersend import emails
 
+logger = logging.getLogger(__name__)
 def admin_required_chat(f):
     """Decorator to require admin login for chat routes"""
     def decorated_function(*args, **kwargs):
@@ -84,11 +87,10 @@ def admin_chat_conversation_detail(conversation_id):
         logging.error(f"Error viewing conversation {conversation_id}: {str(e)}")
         flash('Error loading conversation', 'error')
         return redirect(url_for('admin_chat_conversations'))
-
 @app.route('/admin/chat-conversation/<int:conversation_id>/reply', methods=['POST'])
 @admin_required_chat
 def admin_chat_reply(conversation_id):
-    """Send admin reply (JSON-only, optimized)"""
+    """Send admin reply (JSON + save to DB + email with full chat history)"""
     if not request.is_json:
         return jsonify(success=False, error='Only JSON allowed'), 400
 
@@ -100,7 +102,16 @@ def admin_chat_reply(conversation_id):
     admin_user = session.get('admin_username', 'admin')
 
     try:
-        # Create and save message
+        # 🔹 Fetch conversation details
+        conversation = ChatConversation.query.get(conversation_id)
+        if not conversation:
+            return jsonify(success=False, error="Conversation not found"), 404
+
+        user_email = conversation.user_email
+        user_phone = conversation.phone_number
+        user_name = conversation.user_name
+
+        # 🔹 Save admin message in DB
         new_msg = ChatMessage(
             conversation_id=conversation_id,
             message_text=admin_message,
@@ -111,18 +122,163 @@ def admin_chat_reply(conversation_id):
         db.session.add(new_msg)
         db.session.commit()
 
-        # Return only the essential message details
+        # 🔹 Fetch chat history (oldest → newest)
+        chat_history = ChatMessage.query.filter_by(
+            conversation_id=conversation_id
+        ).order_by(ChatMessage.created_at.asc()).all()
+
+        # 🔹 Create dynamic chat link
+        chat_link = url_for(
+            'index',        # Replace with your actual chat route function name
+            name=user_name,
+            email=user_email,
+            phone=user_phone,
+            _external=True
+        )
+
+        # 🔹 Prepare email HTML (chat-bubble style: admin left, user right)
+        body_html = f"""
+        <html>
+          <head>
+            <style>
+              body {{
+                font-family: Arial, sans-serif;
+                background-color: #f8f9fa;
+                margin: 0;
+                padding: 20px;
+                color: #333;
+              }}
+              .container {{
+                max-width: 600px;
+                margin: auto;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                padding: 20px;
+              }}
+              h2 {{
+                text-align: center;
+                color: #007bff;
+              }}
+              .chat-box {{
+                margin-top: 20px;
+                padding: 15px;
+                background: #f1f1f1;
+                border-radius: 10px;
+                max-height: 400px;
+                overflow-y: auto;
+              }}
+              .message {{
+                margin: 10px 0;
+                padding: 10px 15px;
+                border-radius: 20px;
+                display: inline-block;
+                max-width: 80%;
+                line-height: 1.4;
+              }}
+              .admin {{
+                background: #e1f5fe;  /* light blue */
+                color: #333;
+                float: left;
+                clear: both;
+              }}
+              .user {{
+                background: #007bff;  /* blue */
+                color: #fff;
+                float: right;
+                clear: both;
+              }}
+              .time {{
+                font-size: 0.8em;
+                color: #666;
+                display: block;
+                margin-top: 3px;
+              }}
+              .cta {{
+                text-align: center;
+                margin-top: 20px;
+              }}
+              .cta a {{
+                background: #007bff;
+                color: #fff;
+                padding: 12px 20px;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+                transition: 0.3s;
+              }}
+              .cta a:hover {{
+                background: #0056b3;
+              }}
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>💬 New Reply from {admin_user}</h2>
+              <p>Hello {user_name or 'User'},</p>
+              <p>You have received a new message from our support team:</p>
+
+              <div class="chat-box">
+                {"".join([
+                    f'<div class="message {"admin" if msg.is_from_admin else "user"}">'
+                    f'{msg.message_text}<span class="time">{msg.created_at.strftime("%I:%M %p")}</span></div>'
+                    for msg in chat_history
+                ])}
+              </div>
+
+              <div class="cta">
+                <a href="{chat_link}" target="_blank">👉 Continue the Conversation</a>
+              </div>
+
+              <p style="margin-top:30px;">Best regards,<br><strong>ConnectYou Support</strong></p>
+            </div>
+          </body>
+        </html>
+        """
+
+        # 🔹 Send email if user has email
+        if user_email:
+            api_key = os.environ.get("MAILERSEND_API_KEY")
+            if not api_key:
+                logger.error("MAILERSEND_API_KEY not set in environment variables")
+            else:
+                try:
+                    mailer = emails.NewEmail(api_key)
+
+                    mail_from = {
+                        "name": "ConnectYou Support",
+                        "email": "support@connectyou.pro"
+                    }
+                    recipients = [{"name": user_name or "User", "email": user_email}]
+                    subject = f"New reply from {admin_user} on ConnectYou Chat"
+
+                    mail_body = {}
+                    mailer.set_mail_from(mail_from, mail_body)
+                    mailer.set_mail_to(recipients, mail_body)
+                    mailer.set_subject(subject, mail_body)
+                    mailer.set_plaintext_content(admin_message, mail_body)
+                    mailer.set_html_content(body_html, mail_body)
+
+                    response = mailer.send(mail_body)
+                    logger.info(f"Mailersend response: {response}")
+
+                except Exception as mail_err:
+                    logger.error(f"Failed to send email to {user_email}: {str(mail_err)}")
+
+        # 🔹 Return API response
         return jsonify(success=True, message={
             'id': new_msg.id,
             'message_text': new_msg.message_text,
             'formatted_time': new_msg.created_at.strftime('%I:%M %p'),
             'is_from_admin': new_msg.is_from_admin,
-            'admin_user': new_msg.admin_user
+            'admin_user': new_msg.admin_user,
+            'user_email': user_email,
+            'user_phone': user_phone,
+            'chat_link': chat_link
         })
 
     except Exception as e:
-        import logging
-        logging.error(f"Failed to send admin reply: {str(e)}")
+        logger.error(f"Failed to send admin reply: {str(e)}")
         return jsonify(success=False, error='Internal server error'), 500
 @app.route('/admin/chat-conversation/<int:conversation_id>/update-status', methods=['POST'])
 @admin_required_chat

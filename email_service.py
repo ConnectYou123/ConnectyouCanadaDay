@@ -17,7 +17,19 @@ def send_report_email(provider_name, provider_phone, reason, other_reason=None, 
         
     Returns:
         bool: True if email sent successfully, False otherwise
-    """
+ # print_mailersend_key.py
+import os
+
+def main():
+    api_key = os.environ.get("MAILERSEND_API_KEY")
+    if api_key:
+        print("MailerSend API Key:", api_key)
+    else:
+        print("MAILERSEND_API_KEY is not set in the environment variables.")
+
+if __name__ == "__main__":
+    main()
+   """
     
     api_key = os.environ.get('MAILERSEND_API_KEY')
     if not api_key:

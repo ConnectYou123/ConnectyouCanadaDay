@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="text-white mb-3">Create Log</h2>
+  <a class="btn btn-secondary mb-3" href="{{ url_for('admin_list_interactions') }}">Back</a>
+  <a class="btn btn-outline-secondary mb-3 ms-2" href="/reports">Back to Admin</a>
+
+  <div class="card bg-dark text-white">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Title</label>
+          <input type="text" name="title" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Client name</label>
+          <input type="text" name="author_name" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Client phone</label>
+            <input type="text" name="client_phone" class="form-control bg-dark text-white" />
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Client email</label>
+            <input type="text" name="client_email" class="form-control bg-dark text-white" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label">Client address</label>
+            <input type="text" name="client_address" class="form-control bg-dark text-white" />
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Service city</label>
+            <input type="text" name="service_city" class="form-control bg-dark text-white" />
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Service needed</label>
+          <input type="text" name="service_needed" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">How did they hear about us?</label>
+          <input type="text" name="referral_source" class="form-control bg-dark text-white" placeholder="e.g., Google, Facebook, Friend, Flyer" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Occurred at</label>
+          <input type="datetime-local" name="occurred_at" value="{{ default_dt }}" class="form-control bg-dark text-white" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control bg-dark text-white" rows="4"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Attachments (images/documents)</label>
+          <input type="file" name="attachments" class="form-control bg-dark text-white" multiple />
+        </div>
+
+        <button type="submit" class="btn btn-danger">Save</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
