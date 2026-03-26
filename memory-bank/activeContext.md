@@ -124,6 +124,21 @@ Complete implementation of optional rating and review functionality for advertis
    - Added test providers for multiple service categories
    - Populated database with realistic provider information
 
+#### Latest: Agent Admin Panel API Access - COMPLETED (March 26, 2026)
+Added full admin panel API access for external agents (e.g. Telegram bot "Roger That"):
+
+**Problem**: The Telegram bot "Roger That" could not access the ConnectYou admin panel because all admin routes used session-based authentication (`@admin_required`) which only works for browser sessions. The AI agent's system prompt also had no knowledge of admin capabilities.
+
+**Solution**:
+1. **Created `agent_admin_api.py`**: New module with 30+ REST API endpoints under `/agent-api/*` prefix
+2. **Bearer Token Auth**: All endpoints secured with `AGENT_API_KEY` environment variable
+3. **Full Admin Coverage**: CRUD endpoints for Providers, Cities, Categories, Advertisements, Interaction Logs, Chat Conversations, Analytics Dashboard, Email Logs, Reports, and Waiting List
+4. **Tool Definitions Endpoint**: `GET /agent-api/tools` returns machine-readable tool/function descriptions for agent integration
+5. **Updated AI Agent System Prompt**: `ai_agent_service.py` now includes admin panel capabilities so the agent knows what it can do
+6. **Registered in routes.py**: Module is imported alongside existing admin_chat_routes
+
+**Setup Required**: Set `AGENT_API_KEY` environment variable on the server and configure the Telegram bot to use the same key as a Bearer token.
+
 ## Current Status
 
 ### Working Features
@@ -134,6 +149,7 @@ Complete implementation of optional rating and review functionality for advertis
 - **Social sharing functionality** for providers and advertisements
 - Report system for provider feedback
 - Admin dashboard for platform management
+- **Agent Admin API** for external bot/agent access to admin panel functions
 - Dark/light theme switching
 
 ### Active Infrastructure

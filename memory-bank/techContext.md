@@ -81,10 +81,19 @@ python app.py  # or flask run
 - **Category Data**: `/api/categories`
 - **Analytics**: Various admin endpoints
 
+### Agent Admin API (External Agent Access)
+- **Base Path**: `/agent-api/*`
+- **Authentication**: Bearer token via `AGENT_API_KEY` env var
+- **Purpose**: Allows external agents (e.g. Telegram bot "Roger That") to access all admin panel functions
+- **Endpoints**: Providers, Cities, Categories, Advertisements, Interactions, Chat Conversations, Analytics, Email Logs, Reports, Waiting List
+- **Tool Definitions**: `GET /agent-api/tools` returns machine-readable tool descriptions for agent integration
+- **Module**: `agent_admin_api.py`
+
 ### External Integrations
 - **Twilio SMS**: Voice and messaging services
 - **Email Services**: Notification and reporting
 - **Frontend Ajax**: Dynamic content loading
+- **Telegram Bot**: "Roger That" bot uses Agent Admin API for admin panel access
 
 ## Security Configuration
 
@@ -111,6 +120,8 @@ python app.py  # or flask run
 - `email_service.py`: Email notifications
 - `simple_email_service.py`: Simplified email wrapper
 - `category_detector.py`: Service category logic
+- `agent_admin_api.py`: REST API exposing admin panel for external agents
+- `ai_agent_service.py`: AI agent with admin panel awareness
 
 ### Frontend Assets
 - `templates/`: Jinja2 HTML templates

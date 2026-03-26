@@ -37,12 +37,20 @@
 - Form submissions for user actions
 - Real-time updates via direct API calls
 
+#### Agent Admin API (`/agent-api/*`)
+- Bearer token authentication via `AGENT_API_KEY`
+- Full CRUD operations for all admin resources
+- Tool definitions endpoint for agent integration
+- Used by external agents (e.g. Telegram bot "Roger That")
+- Mirrors admin panel functionality without session-based auth
+
 ### Security Patterns
 
 #### Authentication & Authorization
-- Session-based authentication for admin users
+- Session-based authentication for admin users (browser)
+- Bearer token authentication for external agents (`@agent_api_auth`)
 - Role-based access control (admin, manager, employee)
-- Decorator-based route protection (`@admin_required`, `@login_required`)
+- Decorator-based route protection (`@admin_required`, `@login_required`, `@agent_api_auth`)
 - Password hashing with PBKDF2
 
 #### Data Protection
