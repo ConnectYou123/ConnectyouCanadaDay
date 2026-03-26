@@ -51,6 +51,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Blueprints
 import admin_chat_routes  # must be imported after `app` is defined
+import agent_admin_api  # Agent API for external bot/agent admin panel access
 notifications_bp = Blueprint('notifications', __name__)
 
 # ---------------------------------------------
