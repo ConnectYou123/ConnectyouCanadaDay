@@ -11,3 +11,9 @@ services:
         generateValue: true
       - key: DATABASE_URL
         value: "sqlite:///instance/contacts.db"
+      - key: FB_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: FB_APP_SECRET
+        sync: false
+      - key: FB_VERIFY_TOKEN
+        sync: false

@@ -71,5 +71,8 @@ def health_check():
     return {'status': 'ok', 'version': '2026.03.25'}
 
 from flask_migrate import Migrate
+from facebook_messenger import messenger_bp
+
+app.register_blueprint(messenger_bp)
 
 migrate = Migrate(app, db)
