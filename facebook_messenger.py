@@ -76,7 +76,7 @@ def detect_city(text):
     return None
 
 
-def get_providers(category, city=None, limit=3):
+def get_providers(category, city=None, limit=6):
     """Query the database for matching service providers."""
     from app import app as flask_app
     from models import ServiceProvider
