@@ -68,7 +68,7 @@ with app.app_context():
 
 @app.route('/health')
 def health_check():
-    return {'status': 'ok', 'version': '2026.03.25'}
+    return {'status': 'ok', 'version': '2026.03.27'}
 
 from flask_migrate import Migrate
 from facebook_messenger import messenger_bp
