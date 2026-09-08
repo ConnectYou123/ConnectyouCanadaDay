@@ -3,6 +3,7 @@ import logging
 from dotenv import load_dotenv
 
 from flask import Flask
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -39,8 +40,24 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 # Initialize the app with the extension, flask-sqlalchemy >= 3.0.x
 db.init_app(app)
 
+# CORS for agent-facing API clients
+CORS(
+    app,
+    resources={
+        r"/api/v1/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+        }
+    },
+)
+
 # Import routes after app initialization
 import routes  # noqa: F401
+
+from agent_api import agent_api_bp
+
+app.register_blueprint(agent_api_bp)
 
 with app.app_context():
     # Make sure to import the models here or their tables won't be created

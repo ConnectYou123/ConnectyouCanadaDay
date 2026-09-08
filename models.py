@@ -323,3 +323,23 @@ class EmailLog(db.Model):
     status = db.Column(db.String(20), nullable=False, default='sent')  # sent, failed
     error = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Inquiry(db.Model):
+    """Customer service inquiry submitted via the agent-facing API."""
+    id = db.Column(db.Integer, primary_key=True)
+    city = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(100), nullable=False)
+    customer_name = db.Column(db.String(200), nullable=True)
+    customer_contact = db.Column(db.String(200), nullable=True)
+    need = db.Column(db.Text, nullable=False)
+    fanout_requested = db.Column(db.Boolean, default=False, nullable=False)
+    fanout_status = db.Column(db.String(50), nullable=True)
+    fanout_reason = db.Column(db.String(200), nullable=True)
+    fanout_provider_count = db.Column(db.Integer, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='recorded')
+    source = db.Column(db.String(50), nullable=False, default='agent_api')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Inquiry {self.id} - {self.category} in {self.city}>'
